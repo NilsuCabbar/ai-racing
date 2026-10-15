@@ -28,4 +28,10 @@ The 3-1-6 jumps seen before appear only once the delayed car is already sliding,
 The fix does not lower the crash rate, and the other parameters were tuned for the old shifting.
 `shift_gear()` stays in, but off (`shift_hold: 0` = old behaviour), and its parameters go to the CMA-ES search.
 The real cause under jitter is the accumulated command lag: each late answer adds one 20 ms step for the rest of the lap.
+| 2026-10-15 | E3 CMA-ES test A | `cmaes_search.py --gens 3 --popsize 8`, sigma 0.15, 17 params, start = best_params | 84.788 (start, no gain) | 0 | 5 (0), start only | 0/5 | – | 0 |
+| 2026-10-15 | E3 CMA-ES test B | same, sigma 0.05, `--stop-on-damage` | 84.788 (start, no gain) | 0 | 5 (0), start only | 0/5 | – | 0 |
+
+Notes on E3: these are short pipeline tests (25 evaluations each), not a real search. With sigma 0.15, 18 of 24 candidates
+crashed. With sigma 0.05, 9 of 24 crashed (generation 3: 0 of 8), and generation bests went 86.52, 85.90, 85.43 s.
+About 3.4 s per evaluation (84 s for 25). Small damages (1–6) are rejected too, as intended.
 

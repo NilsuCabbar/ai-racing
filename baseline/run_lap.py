@@ -51,6 +51,8 @@ ap.add_argument("--jitter", type=float, default=0.0, metavar="P",
                 help="stress test: each step, with probability P the client answers 15 ms late (> the 10 ms default "
                      "timeout), so scr_server reuses the old command and every later command arrives one step later")
 ap.add_argument("--seed", type=int, default=0, help="seed for --jitter (robust run i uses seed+i)")
+ap.add_argument("--stop-on-damage", action="store_true",
+                help="end the lap at the first damage (status 'damaged'); saves time in parameter searches")
 ap.add_argument("--json", action="store_true", help="print the result as one 'JSON {...}' line at the end")
 args = ap.parse_args()
 
@@ -201,6 +203,9 @@ for steps in range(1, int(args.max_sim_s / STEP_DT) + 1):
         last_lap = S["lastLapTime"]
     dist_raced = S.get("distRaced", dist_raced)
     top_speed = max(top_speed, S["speedX"])
+    if args.stop_on_damage and max_damage > 0:
+        status = "damaged"
+        break
     if trace_w and steps % 5 == 0:
         R = C.R.d
         trace_w.writerow([steps, round(cur_lap, 2), round(S["distFromStart"], 1), round(dist_raced, 1),

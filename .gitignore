@@ -6,3 +6,5 @@ __pycache__/
 *.pyc
 .claude/settings.local.json
 robust.csv
+cmaes_log.csv
+cmaes_best.json
