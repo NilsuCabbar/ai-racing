@@ -87,4 +87,20 @@ Safety cost, parameters only (headless 3-lap race; lap 1 = the competition lap):
 The response is chaotic: `min_speed` 46 → 20 damage, 46.6–47.4 → clean. Under `--jitter 0.001` (10 laps, seed 200) none of
 these is more robust (current 3/10, `min_speed` 47 8/10, +`margin` 11 7/10). That stress is the lag problem, and the
 GUI shows it does not happen in practice.
+| 2026-10-15 | E7 new best_params (B) | E5 with `min_speed` 47 and `margin` 11. E5 values kept in `best_params_e5.json` | **82.690** | 0 | – | – | – | – |
+
+Notes on E7: a sensitivity test, `baseline/perturb_test.py`. 20 variants per candidate, every parameter scaled by a
+random factor in [0.99, 1.01] (seed 7, the same factors for both), each in the deterministic 3-lap race
+(`baseline/corkscrew_3lap.xml`, which equals the real-time GUI per E6). Clean = all 3 laps done, damage 0, off-track 0.
+Full output: `results/e7_perturb_A.txt`, `results/e7_perturb_B.txt`.
+
+| Candidate | Nominal lap 1 / laps 2–3 | Clean variants | Damaged / off track | Lap 1 mean / worst / best |
+|---|---|---|---|---|
+| A: `min_speed` 47 | 82.388 / 79.214 / 79.126, clean | **10/20** | 9 (damage 7–32) / 4 (0.22–0.8 s) | 82.476 / 82.926 / 82.164 |
+| B: `min_speed` 47 + `margin` 11 | 82.690 / 79.564 / 79.458, clean | **20/20** | 0 / 0 | 82.868 / 83.382 / 82.466 |
+
+B is clearly more robust, so it becomes `best_params.json`. Its 1-lap race gives 82.690 s with damage 0 and 0 s off
+track. That costs 0.534 s against E5 (82.156 s, 0.34 s off track) and is still 2.098 s faster than E1 (84.788 s).
+Even A, which looked clean, fails in half of its ±1% neighbourhood, so a single clean run is not enough evidence.
+This perturbation check is a good acceptance gate for future searches.
 

@@ -10,3 +10,5 @@ cmaes_log.csv
 cmaes_best.json
 timing_*.csv
 runs_pre_timing.csv
+perturb.csv
+perturb_*.txt

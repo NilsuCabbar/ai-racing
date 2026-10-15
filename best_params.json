@@ -1,11 +1,11 @@
 {
-  "score": 82.156,
-  "source": "E4 CMA-ES fastest clean candidate e4_g022_04 (results/cmaes_e4_fastest.json)",
+  "score": 82.69,
+  "source": "E7: E5 (e4_g022_04) with min_speed 47 and margin 11; 20/20 clean under +-1% perturbation (3-lap race)",
   "params": {
     "max_speed": 308.1155,
-    "min_speed": 48.5667,
+    "min_speed": 47.0,
     "decel": 23.4137,
-    "margin": 9.8846,
+    "margin": 11.0,
     "center_k": 0.2,
     "brake_gain": 0.0698,
     "aim_w": 0.6716,
