@@ -1,0 +1,15 @@
+{
+  "max_speed": 280.523,
+  "min_speed": 47.608,
+  "decel": 17.46,
+  "margin": 8.831,
+  "center_k": 0.2,
+  "brake_gain": 0.02,
+  "aim_w": 0.733,
+  "mix": 0.285,
+  "smooth": 0.236,
+  "up_rpm": 16500,
+  "down_rpm": 10000,
+  "tc_thresh": 13.754,
+  "tc_cut": 0.531
+}
