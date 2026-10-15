@@ -1,0 +1,22 @@
+{
+  "score": 82.156,
+  "params": {
+    "max_speed": 308.1155,
+    "min_speed": 48.5667,
+    "decel": 23.4137,
+    "margin": 9.8846,
+    "center_k": 0.2,
+    "brake_gain": 0.0698,
+    "aim_w": 0.6716,
+    "mix": 0.2863,
+    "smooth": 0.2504,
+    "up_rpm": 16315.9246,
+    "down_rpm": 9800.469,
+    "tc_thresh": 12.9171,
+    "tc_cut": 0.5404,
+    "shift_hold": 0.0333,
+    "gear_hyst": 1693.7091,
+    "corner_steer": 0.2984,
+    "corner_down_rpm": 7705.5182
+  }
+}

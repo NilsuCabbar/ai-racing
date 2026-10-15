@@ -1,0 +1,49 @@
+CMA-ES: n=17 params, popsize=12, gens=40, sigma=0.05; validation: 5 laps with --jitter 0.001, pass if crashes <= 1
+start: lap=84.788 damage=0.0 clean
+start validation: 4/5 crashes -> fail
+gen  1: clean 5/12  gen-best=83.714  validated [#10 83.714s 3/5 FAIL; #11 84.466s 4/5 FAIL; #09 84.666s 4/5 FAIL]  (a)=83.714  (b)=3/5 @ 83.714  accepted=None  sigma=0.046  82s
+gen  2: clean 10/12  gen-best=85.688  validated [#04 85.688s 1/5; #10 86.016s 4/5 FAIL; #08 86.324s 4/5 FAIL]  (a)=83.714  (b)=1/5 @ 85.688  accepted=85.688  sigma=0.045  150s
+gen  3: clean 9/12  gen-best=85.036  validated [#05 85.036s 3/5 FAIL; #02 85.254s 4/5 FAIL; #07 85.616s 0/5]  (a)=83.714  (b)=0/5 @ 85.616  accepted=85.616  sigma=0.046  223s
+gen  4: clean 11/12  gen-best=83.61  validated [#02 83.610s 1/5; #11 84.236s 4/5 FAIL; #07 84.360s 2/5 FAIL]  (a)=83.61  (b)=0/5 @ 85.616  accepted=83.61  sigma=0.048  292s
+gen  5: clean 11/12  gen-best=82.594  validated [#08 82.594s 3/5 FAIL]  (a)=82.594  (b)=0/5 @ 85.616  accepted=83.61  sigma=0.047  335s
+gen  6: clean 5/12  gen-best=83.632  validated [#09 83.632s 2/5 FAIL]  (a)=82.594  (b)=0/5 @ 85.616  accepted=83.61  sigma=0.045  377s
+gen  7: clean 5/12  gen-best=83.686  validated [#05 83.686s 3/5 FAIL]  (a)=82.594  (b)=0/5 @ 85.616  accepted=83.61  sigma=0.042  418s
+gen  8: clean 4/12  gen-best=84.512  validated [#00 84.512s 3/5 FAIL]  (a)=82.594  (b)=0/5 @ 85.616  accepted=83.61  sigma=0.040  459s
+gen  9: clean 5/12  gen-best=85.136  validated [#11 85.136s 5/5 FAIL]  (a)=82.594  (b)=0/5 @ 85.616  accepted=83.61  sigma=0.037  501s
+gen 10: clean 7/12  gen-best=83.398  validated [#09 83.398s 0/5; #01 83.468s 0/5]  (a)=82.594  (b)=0/5 @ 83.398  accepted=83.398  sigma=0.036  557s
+gen 11: clean 9/12  gen-best=84.112  validated [#03 84.112s 2/5 FAIL]  (a)=82.594  (b)=0/5 @ 83.398  accepted=83.398  sigma=0.036  605s
+gen 12: clean 10/12  gen-best=82.896  validated [#04 82.896s 2/5 FAIL; #11 82.904s 1/5; #02 82.988s 1/5]  (a)=82.594  (b)=0/5 @ 83.398  accepted=82.904  sigma=0.037  672s
+gen 13: clean 4/12  gen-best=83.418  validated [#11 83.418s 2/5 FAIL]  (a)=82.594  (b)=0/5 @ 83.398  accepted=82.904  sigma=0.036  713s
+gen 14: clean 7/12  gen-best=84.066  validated [#06 84.066s 3/5 FAIL]  (a)=82.594  (b)=0/5 @ 83.398  accepted=82.904  sigma=0.035  756s
+gen 15: clean 11/12  gen-best=83.788  validated [#11 83.788s 4/5 FAIL]  (a)=82.594  (b)=0/5 @ 83.398  accepted=82.904  sigma=0.034  800s
+gen 16: clean 8/12  gen-best=84.66  validated [#08 84.660s 1/5]  (a)=82.594  (b)=0/5 @ 83.398  accepted=82.904  sigma=0.034  845s
+gen 17: clean 10/12  gen-best=83.538  validated [#01 83.538s 1/5]  (a)=82.594  (b)=0/5 @ 83.398  accepted=82.904  sigma=0.032  889s
+gen 18: clean 9/12  gen-best=83.746  validated [#03 83.746s 0/5]  (a)=82.594  (b)=0/5 @ 83.398  accepted=82.904  sigma=0.031  936s
+gen 19: clean 10/12  gen-best=83.216  validated [#02 83.216s 1/5]  (a)=82.594  (b)=0/5 @ 83.398  accepted=82.904  sigma=0.031  982s
+gen 20: clean 8/12  gen-best=83.056  validated [#09 83.056s 5/5 FAIL]  (a)=82.594  (b)=0/5 @ 83.398  accepted=82.904  sigma=0.031  1024s
+gen 21: clean 8/12  gen-best=82.796  validated [#02 82.796s 5/5 FAIL]  (a)=82.594  (b)=0/5 @ 83.398  accepted=82.904  sigma=0.031  1070s
+gen 22: clean 5/12  gen-best=82.156  validated [#04 82.156s 2/5 FAIL]  (a)=82.156  (b)=0/5 @ 83.398  accepted=82.904  sigma=0.031  1110s
+gen 23: clean 9/12  gen-best=82.898  validated [#10 82.898s 3/5 FAIL]  (a)=82.156  (b)=0/5 @ 83.398  accepted=82.904  sigma=0.031  1154s
+gen 24: clean 12/12  gen-best=82.908  validated [#10 82.908s 5/5 FAIL]  (a)=82.156  (b)=0/5 @ 83.398  accepted=82.904  sigma=0.030  1198s
+gen 25: clean 10/12  gen-best=83.008  validated [#06 83.008s 3/5 FAIL]  (a)=82.156  (b)=0/5 @ 83.398  accepted=82.904  sigma=0.030  1243s
+gen 26: clean 11/12  gen-best=82.648  validated [#03 82.648s 3/5 FAIL]  (a)=82.156  (b)=0/5 @ 83.398  accepted=82.904  sigma=0.028  1288s
+gen 27: clean 10/12  gen-best=83.088  validated [#08 83.088s 0/5]  (a)=82.156  (b)=0/5 @ 83.088  accepted=82.904  sigma=0.027  1333s
+gen 28: clean 12/12  gen-best=82.87  validated [#11 82.870s 3/5 FAIL]  (a)=82.156  (b)=0/5 @ 83.088  accepted=82.904  sigma=0.026  1378s
+gen 29: clean 8/12  gen-best=82.328  validated [#05 82.328s 2/5 FAIL; #00 82.642s 3/5 FAIL; #06 82.732s 1/5]  (a)=82.156  (b)=0/5 @ 83.088  accepted=82.732  sigma=0.026  1444s
+gen 30: clean 9/12  gen-best=82.974  validated [#11 82.974s 4/5 FAIL]  (a)=82.156  (b)=0/5 @ 83.088  accepted=82.732  sigma=0.025  1487s
+gen 31: clean 11/12  gen-best=82.954  validated [#11 82.954s 0/5]  (a)=82.156  (b)=0/5 @ 82.954  accepted=82.732  sigma=0.025  1533s
+gen 32: clean 10/12  gen-best=82.494  validated [#10 82.494s 2/5 FAIL; #00 82.636s 2/5 FAIL]  (a)=82.156  (b)=0/5 @ 82.954  accepted=82.732  sigma=0.025  1591s
+gen 33: clean 12/12  gen-best=82.234  validated [#01 82.234s 3/5 FAIL]  (a)=82.156  (b)=0/5 @ 82.954  accepted=82.732  sigma=0.026  1637s
+gen 34: clean 11/12  gen-best=83.126  validated [#07 83.126s 4/5 FAIL]  (a)=82.156  (b)=0/5 @ 82.954  accepted=82.732  sigma=0.025  1682s
+gen 35: clean 10/12  gen-best=82.766  validated [#06 82.766s 3/5 FAIL]  (a)=82.156  (b)=0/5 @ 82.954  accepted=82.732  sigma=0.025  1727s
+gen 36: clean 12/12  gen-best=82.368  validated [#01 82.368s 4/5 FAIL; #03 82.552s 0/5; #06 82.634s 5/5 FAIL]  (a)=82.156  (b)=0/5 @ 82.552  accepted=82.552  sigma=0.025  1798s
+gen 37: clean 11/12  gen-best=82.948  validated [#09 82.948s 3/5 FAIL]  (a)=82.156  (b)=0/5 @ 82.552  accepted=82.552  sigma=0.025  1844s
+gen 38: clean 10/12  gen-best=82.59  validated [#10 82.590s 3/5 FAIL]  (a)=82.156  (b)=0/5 @ 82.552  accepted=82.552  sigma=0.025  1889s
+gen 39: clean 12/12  gen-best=82.524  validated [#05 82.524s 3/5 FAIL]  (a)=82.156  (b)=0/5 @ 82.552  accepted=82.552  sigma=0.024  1934s
+gen 40: clean 10/12  gen-best=82.402  validated [#00 82.402s 4/5 FAIL]  (a)=82.156  (b)=0/5 @ 82.552  accepted=82.552  sigma=0.024  1977s
+
+=== RESULT ===
+(a) fastest clean : 82.156 s (e4_g022_04)
+(b) most robust   : 0/5 crashes, det lap 82.552 s, jitter mean 83.332 (e4_g036_03)
+accepted best     : 82.552 s, 0/5 crashes (e4_g036_03)
+saved: results/cmaes_e4.json

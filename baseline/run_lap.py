@@ -85,6 +85,7 @@ if args.robust > 0:
                  "--port", str(args.port), "--udp-timeout-us", str(args.robust_timeout_us),
                  "--max-sim-s", str(args.max_sim_s), "--wall-timeout", str(args.wall_timeout),
                  "--jitter", str(args.jitter), "--seed", str(args.seed + i),
+                 *(["--stop-on-damage"] if args.stop_on_damage else []),
                  "--out", args.out, "--tag", f"{args.tag}#robust{i + 1}"]
         out = subprocess.run(child, capture_output=True, text=True).stdout
         lines = [ln for ln in out.splitlines() if ln.startswith("JSON ")]
@@ -236,7 +237,9 @@ row = {
     "time": time.strftime("%Y-%m-%d %H:%M:%S"),
     "driver": args.driver,
     "status": status,
-    "lap_time_s": round(last_lap, 3) if last_lap else "",  # TORCS lastLapTime: green light -> finish line
+    # TORCS lastLapTime (green light -> finish line). Sometimes TORCS shuts down right at the line before the
+    # client sees lastLapTime; then the console "Sim Time" of the finished 1-lap race is the same value (2 decimals).
+    "lap_time_s": round(last_lap, 3) if last_lap else (race_time if status == "finished" else ""),
     "race_time_s": race_time,                               # TORCS console "Sim Time"
     "laps": laps,
     "damage": max_damage,                                   # TORCS damage sensor (0 = clean)
