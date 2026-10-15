@@ -17,6 +17,7 @@ import json
 import os
 import random
 import re
+import select
 import subprocess
 import sys
 import threading
@@ -53,8 +54,17 @@ ap.add_argument("--jitter", type=float, default=0.0, metavar="P",
 ap.add_argument("--seed", type=int, default=0, help="seed for --jitter (robust run i uses seed+i)")
 ap.add_argument("--stop-on-damage", action="store_true",
                 help="end the lap at the first damage (status 'damaged'); saves time in parameter searches")
+ap.add_argument("--attach", action="store_true",
+                help="do not start TORCS: connect to a race already waiting in the TORCS GUI (Race > Quick Race > New "
+                     "Race), drive until TORCS ends it (any number of laps), real time and default timeout as set there")
+ap.add_argument("--timing-log", default="", metavar="CSV",
+                help="log per step: client response time (ms) and whether the next state was already waiting "
+                     "(= the server did not wait for us); the result adds late (>10 ms) answers and missed steps")
 ap.add_argument("--json", action="store_true", help="print the result as one 'JSON {...}' line at the end")
 args = ap.parse_args()
+if args.attach:  # a GUI race runs in real time and can have several laps
+    args.max_sim_s = max(args.max_sim_s, 1200.0)
+    args.wall_timeout = max(args.wall_timeout, 2400.0)
 
 STEP_DT = 0.02  # scr_server: 50 control steps per simulated second
 
@@ -123,29 +133,35 @@ if args.robust > 0:
         print("JSON " + json.dumps(summary))
     sys.exit(0)
 
-# ---------- start TORCS headless ----------
-wtorcs = os.path.join(args.torcs_dir, "wtorcs.exe")
+# ---------- start TORCS headless (or attach to a GUI race) ----------
+torcs = None
 log_path = os.path.join(HERE, "wtorcs_last.log")
-log_f = open(log_path, "w")
-cmd = [wtorcs, "-r", os.path.abspath(args.race_xml)]
-if args.udp_timeout_us:
-    cmd += ["-t", str(args.udp_timeout_us)]
-torcs = subprocess.Popen(cmd, cwd=args.torcs_dir,
-                         stdout=log_f, stderr=subprocess.STDOUT,
-                         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+if not args.attach:
+    wtorcs = os.path.join(args.torcs_dir, "wtorcs.exe")
+    log_f = open(log_path, "w")
+    cmd = [wtorcs, "-r", os.path.abspath(args.race_xml)]
+    if args.udp_timeout_us:
+        cmd += ["-t", str(args.udp_timeout_us)]
+    torcs = subprocess.Popen(cmd, cwd=args.torcs_dir,
+                             stdout=log_f, stderr=subprocess.STDOUT,
+                             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
 
 
 def watchdog():
     time.sleep(args.wall_timeout)
-    print(f"\n[watchdog] {args.wall_timeout}s wall time exceeded, killing TORCS", flush=True)
-    torcs.kill()
+    print(f"\n[watchdog] {args.wall_timeout}s wall time exceeded, stopping", flush=True)
+    if torcs:
+        torcs.kill()
     os._exit(2)
 
 
 threading.Thread(target=watchdog, daemon=True).start()
-time.sleep(1.0)
-if torcs.poll() is not None:
-    sys.exit(f"wtorcs.exe exited immediately (code {torcs.returncode}), see {log_path}")
+if torcs:
+    time.sleep(1.0)
+    if torcs.poll() is not None:
+        sys.exit(f"wtorcs.exe exited immediately (code {torcs.returncode}), see {log_path}")
+else:
+    print("Attach mode: waiting for the TORCS GUI race on port", args.port, flush=True)
 
 # ---------- client + driver from the team repo (imported as-is) ----------
 sys.path.insert(0, args.code_dir)
@@ -178,6 +194,22 @@ if trace_w:
     trace_w.writerow(["step", "curLapTime", "distFromStart", "distRaced", "speedX", "trackPos", "angle",
                       "rpm", "steer", "accel", "brake", "gear", "damage"])
 
+timing_f = open(args.timing_log, "w", newline="", encoding="utf-8") if args.timing_log else None
+timing_w = csv.writer(timing_f) if timing_f else None
+if timing_w:
+    timing_w.writerow(["step", "laps_done", "curLapTime", "wait_ms", "resp_ms", "next_was_waiting", "gear_echo_steps"])
+resp_ms_all = []
+late_resp = 0       # our answer took > 10 ms (the TORCS default timeout)
+waiting_steps = 0   # the next state was already queued when we asked for it: the server had moved on without us
+miss_events = 0     # waiting steps that start a new run (not waiting -> waiting): each adds one step of lag
+prev_waiting = False
+lap_times = []
+# Gear echo: steps from sending a new gear until the gear sensor shows it. In sync this is a fixed number;
+# each step of accumulated command lag adds one. Works in real-time GUI mode, where "next_was_waiting" cannot.
+gear_sent = None      # (step, gear) of the last gear change we sent and have not seen yet
+prev_gear_cmd = None
+gear_echo = []        # (step, echo_steps)
+
 status = "timeout"
 steps = off_steps = 0
 max_damage = 0.0
@@ -186,8 +218,12 @@ last_lap = 0.0
 dist_raced = 0.0
 top_speed = 0.0
 for steps in range(1, int(args.max_sim_s / STEP_DT) + 1):
+    # Timing is measured around the client's own calls; torcs_jm_par.py is not changed.
+    t0 = time.perf_counter()
+    waiting = bool(C.so) and steps > 1 and bool(select.select([C.so], [], [], 0)[0])
     C.get_servers_input()
-    if C.so is None:  # ***shutdown***: TORCS finished the 1-lap race
+    t1 = time.perf_counter()
+    if C.so is None:  # ***shutdown***: TORCS finished the race
         status = "finished"
         break
     S = C.S.d
@@ -196,6 +232,27 @@ for steps in range(1, int(args.max_sim_s / STEP_DT) + 1):
         late_steps += 1
         time.sleep(0.015)
     C.respond_to_server()
+    echo = ""
+    if gear_sent and S.get("gear") == gear_sent[1]:
+        echo = steps - gear_sent[0]
+        gear_echo.append((steps, echo))
+        gear_sent = None
+    if C.R.d["gear"] != prev_gear_cmd:
+        if prev_gear_cmd is not None and C.R.d["gear"] != S.get("gear"):
+            gear_sent = (steps, C.R.d["gear"])
+        prev_gear_cmd = C.R.d["gear"]
+    if timing_w or args.attach:
+        resp_ms = (time.perf_counter() - t1) * 1000.0
+        resp_ms_all.append(resp_ms)
+        late_resp += resp_ms > 10.0
+        waiting_steps += waiting
+        miss_events += waiting and not prev_waiting
+        prev_waiting = waiting
+        if timing_w:
+            timing_w.writerow([steps, len(lap_times), round(S.get("curLapTime", 0), 3), round((t1 - t0) * 1000, 3),
+                               round(resp_ms, 3), int(waiting), echo])
+    if S.get("lastLapTime", 0) > 0 and (not lap_times or abs(S["lastLapTime"] - lap_times[-1]) > 1e-6):
+        lap_times.append(S["lastLapTime"])
     if abs(S["trackPos"]) > 1.0:
         off_steps += 1
     max_damage = max(max_damage, S.get("damage", 0.0))
@@ -215,23 +272,28 @@ for steps in range(1, int(args.max_sim_s / STEP_DT) + 1):
 wall_s = time.time() - wall0
 if trace_f:
     trace_f.close()
+if timing_f:
+    timing_f.close()
 
 # ---------- wait for TORCS to write results ----------
-if status != "finished":
-    torcs.kill()
-try:
-    torcs.wait(timeout=30)
-except subprocess.TimeoutExpired:
-    torcs.kill()
-log_f.close()
+if torcs:
+    if status != "finished":
+        torcs.kill()
+    try:
+        torcs.wait(timeout=30)
+    except subprocess.TimeoutExpired:
+        torcs.kill()
+    log_f.close()
 
-# TORCS prints "Sim Time: 84.79 [s], Leader Laps: 1, ..." when the text-mode race ends.
-# (Its results XML is not written when -r gets an absolute path, so we read the console log.)
-with open(log_path, encoding="utf-8", errors="replace") as f:
-    m = re.search(r"Sim Time:\s*([\d.]+).*?Leader Laps:\s*(\d+)", f.read())
-race_time, laps = (float(m.group(1)), int(m.group(2))) if m else ("", "")
-if status == "finished" and laps != 1:
-    status = "incomplete"
+    # TORCS prints "Sim Time: 84.79 [s], Leader Laps: 1, ..." when the text-mode race ends.
+    # (Its results XML is not written when -r gets an absolute path, so we read the console log.)
+    with open(log_path, encoding="utf-8", errors="replace") as f:
+        m = re.search(r"Sim Time:\s*([\d.]+).*?Leader Laps:\s*(\d+)", f.read())
+    race_time, laps = (float(m.group(1)), int(m.group(2))) if m else ("", "")
+    if status == "finished" and laps != 1:
+        status = "incomplete"
+else:  # GUI race: no console log; laps as seen by the client (the final lap can end with the shutdown)
+    race_time, laps = "", len(lap_times)
 
 row = {
     "time": time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -247,7 +309,16 @@ row = {
     "top_speed_kmh": round(top_speed, 1),
     "dist_raced_m": round(dist_raced, 1),
     "sim_steps": steps,
-    "late_steps": late_steps,
+    "late_steps": late_steps,               # injected by --jitter
+    "lap_times": " ".join(f"{t:.3f}" for t in lap_times),
+    "late_resp_gt10ms": late_resp if resp_ms_all else "",
+    "miss_events": miss_events if resp_ms_all else "",
+    "lagged_steps": waiting_steps if resp_ms_all else "",
+    "gear_echo_steps": (f"min {min(e for _, e in gear_echo)} median {sorted(e for _, e in gear_echo)[len(gear_echo) // 2]}"
+                        f" max {max(e for _, e in gear_echo)} last {gear_echo[-1][1]} (n={len(gear_echo)})")
+                       if gear_echo else "",
+    "p99_resp_ms": round(sorted(resp_ms_all)[int(0.99 * (len(resp_ms_all) - 1))], 3) if resp_ms_all else "",
+    "max_resp_ms": round(max(resp_ms_all), 3) if resp_ms_all else "",
     "udp_timeout_us": args.udp_timeout_us or "default",
     "wall_s": round(wall_s, 1),
     "params": json.dumps(params, sort_keys=True),

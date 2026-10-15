@@ -43,3 +43,25 @@ Pass `--udp-timeout-us 0` to use the TORCS default again, for example to test ro
 The lap time is measured from the green light to the finish line, starting 10 m behind the line from a standstill.
 The repo README reports 83.63 s for the same parameters. That figure came from a GUI multi-lap race and a different way of
 measuring the time in `lap_runner.py`, so use 84.788 s as the baseline for this setup.
+
+## Robustness and timing options
+
+| Option | What it does |
+|---|---|
+| `--robust N` | N separate laps with the TORCS default UDP timeout (10 ms); crash rate, mean/best time, max damage (`baseline/robust.csv`) |
+| `--jitter P` | each step, with probability P, answer 15 ms late (repeatable timing stress) |
+| `--stop-on-damage` | end a lap at the first damage (used by `cmaes_search.py`) |
+| `--timing-log CSV` | per step: response time, whether the next state was already queued, gear echo (command lag probe) |
+| `--attach` | do not start TORCS; drive a race already waiting in the TORCS GUI (real time, default timeout, any number of laps) |
+
+`baseline/analyze_timing.py <timing csv>` summarises a timing log: late answers (>10 ms) per step, comparable with
+`--jitter P`, and the command lag from the gear echo (1 step = in sync, each extra step = 20 ms of lag).
+
+### Measuring in the real-time GUI
+
+1. Start `working_space\torch\torcs\wtorcs.exe`.
+2. Race → Quick Race → Configure Race: track Corkscrew (road); drivers: only `scr_server 1`; laps 3.
+3. Race → Quick Race → New Race. TORCS waits for the client.
+4. In a terminal, in `RaceYourCode`:
+   `..\torcs-env\Scripts\python baseline\run_lap.py --attach --timing-log baseline\timing_gui.csv --trace --tag gui_3laps`
+5. After the race: `..\torcs-env\Scripts\python baseline\analyze_timing.py baseline\timing_gui.csv`

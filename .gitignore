@@ -8,3 +8,5 @@ __pycache__/
 robust.csv
 cmaes_log.csv
 cmaes_best.json
+timing_*.csv
+runs_pre_timing.csv
