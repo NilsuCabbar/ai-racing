@@ -52,4 +52,39 @@ Notes on E4: the verification rows use 10 new laps with `--seed 100`. The search
 
 Notes on E5: 2.632 s faster than the E1 baseline, with 0 damage. Off-track time is 0.34 s (|trackPos| > 1 briefly; E1 had 0 s),
 so check whether the rules penalise leaving the track. These parameters turn on the new gear logic (`shift_hold` 0.033 s).
+| 2026-10-15 | E6 GUI, real time | E5 `best_params`, TORCS GUI Quick Race, 3 laps, default timeout, `run_lap.py --attach --timing-log` | lap 1 **82.156** (laps 2–3: 79.582 / 79.85) | 6 (lap 3) | – | – | – | – |
+
+Notes on E6 (`results/e6_gui_timing.csv`, `results/e6_gui_trace.csv`):
+- **No command lag in the real-time GUI.** Over 11,688 steps there were 0 answers over 10 ms. The median response was 0.18 ms
+  (max 0.92 ms), and states arrived every ~20 ms (one 40 ms frame hitch). The gear echo was 1 step for all 141 shifts,
+  so the lag was 0 the whole race. That is below the mildest jitter test (P=0.001 ≈ 4 late answers per lap), so the
+  lag problem does not appear in these conditions.
+- Lap 1 equals the headless deterministic lap exactly (82.156 s). A headless 3-lap race (`-t 1000000`) reproduces the
+  GUI run step for step (same damage step, 1.06 s off track, laps 82.156 / 79.582 / 79.862). Headless = GUI here.
+- Damage 6 is all in **lap 3**, at distFromStart **2490 m** (second, right-hand part of the Corkscrew). The car is at 80 km/h,
+  braking, slid ~27° (angle −0.48 rad), trackPos −0.67, so it is inside the track and not touching a wall. It slides at this
+  spot every lap (max |angle| 0.36 / 0.43 / 0.48); lap 3 arrived ~2 km/h faster with less braking.
+- Off track: about 0.3 s per lap (1.06 s total), always at **3275–3278 m**, the exit of the last hairpin at ~48 km/h.
+  The car runs 0.16 m past the right edge (trackPos −1.026; track 12 m wide), because the throttle opens (0.46) while
+  steering is still ~0.8. Lap 1's 0.34 s is all here. Lap 1 has no damage.
+- The runner printed `udp_timeout_us: 1000000` in attach mode. That is only its default argument; the GUI used TORCS's
+  own default (10 ms). The third lap time is missing from `lap_times` because TORCS shut down first; its value is
+  241.59 − 82.156 − 79.582 = 79.85 s (TORCS results screen).
+
+Safety cost, parameters only (headless 3-lap race; lap 1 = the competition lap):
+
+| Variant | Lap 1 (s) | Cost | Laps 2 / 3 | Damage | Off track | Corkscrew max angle |
+|---|---|---|---|---|---|---|
+| current (E5) | 82.156 | – | 79.582 / 79.862 | 6 | 0.3 / 0.3 / 0.4 s | 0.48 |
+| `min_speed` 48.57 → 47 | 82.388 | +0.23 | 79.214 / 79.126 | 0 | 0 | 0.39 |
+| `min_speed` 46.6 / 46.8 / 47.2 / 47.4 | 82.30 / 82.57 / 82.36 / 82.29 | +0.13…+0.41 | | 0 | 0 (47.4: 0.1 s lap 1) | ≤ 0.42 |
+| `min_speed` 46 / 45 / 44 | 83.01 / 82.51 / 83.25 | | | **20 / 17 / 17** | 0 | 0.58 / 0.55 / 0.54 |
+| `margin` 11 (10.5 / 11.5 / 12) | 82.578 (82.49 / 82.96 / 83.17) | +0.34…+1.02 | | 0 | 0 | ≤ 0.40 |
+| `decel` 22.5 (22 / 23) | 82.670 (82.97 / 82.42) | +0.26…+0.82 | | 0 | 0 | ≤ 0.39 |
+| `min_speed` 47 + `margin` 11 | 82.690 | +0.53 | 79.564 / 79.458 | 0 | 0 | 0.35 |
+| `center_k` 0.4 | DNF | | | 60 | | |
+
+The response is chaotic: `min_speed` 46 → 20 damage, 46.6–47.4 → clean. Under `--jitter 0.001` (10 laps, seed 200) none of
+these is more robust (current 3/10, `min_speed` 47 8/10, +`margin` 11 7/10). That stress is the lag problem, and the
+GUI shows it does not happen in practice.
 
