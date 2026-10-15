@@ -1,96 +1,83 @@
 # AI Racing – TORCS Corkscrew driver (IBM AI Racing League)
 
-A Python driver for the TORCS `scr_server` car (600 kg open-wheel car, `car1-ow1`) on the **Corkscrew** track.
-Only the Python AI code is changed; the car model is untouched. All laps start from a standing start.
+A Python driver for the TORCS `scr_server` car (`car1-ow1`, 600 kg open-wheel car) on **Corkscrew**.
+Only the Python AI code is changed. The car model and the organizers' TORCS package are untouched.
 
-**Best clean lap: 83.63 s** (no damage, never off track). Starting point was a driver that could not finish the lap.
+**Current result: 1 lap, standing start, 82.690 s, damage 0, 0 s off track.**
+It stays clean in 20 of 20 variants with every parameter changed by ±1% (3-lap race).
 
-| Step | Lap time |
-|---|---|
-| IBM sample driver (`torcs_jm_par.py`, default settings) | did not finish (crashed at ~2.5 km) |
-| `my_driver.py` first version (look-ahead braking) | 147.15 s |
-| + parameter search | 106.09 s |
-| + aim at the longest track sensor, steering smoothing, mixed look-ahead | 85.74 s |
-| + high-rpm gear shifting (engine peaks near 18 000 rpm) and re-tuned braking/traction | **83.63 s** |
+| Step | Lap 1 | Damage | Off track | Notes |
+|---|---|---|---|---|
+| Baseline (`best_params_baseline.json`) | 84.788 s | 0 | 0 s | crashes 7/10 laps under timing stress |
+| E5: CMA-ES search (`best_params_e5.json`) | 82.156 s | 0 | 0.34 s | 6 damage in lap 3 of a 3-lap race |
+| **E7: E5 + `min_speed` 47, `margin` 11 (`best_params.json`)** | **82.690 s** | **0** | **0 s** | **20/20 clean under ±1%** |
 
-The simulation is deterministic: the same parameters give the same lap time every run.
+Details, every measurement and what did not work: [EXPERIMENTS.md](EXPERIMENTS.md).
+
+All times come from headless TORCS (text mode). A lap there is identical to a lap in the real-time GUI, and the GUI showed
+no command lag (E6). An earlier version of this README reported 83.63 s for the baseline parameters. That number
+came from `lap_runner.py` in a multi-lap GUI race, which times the lap differently. The same parameters measure
+84.788 s here.
 
 ## How the driver works (`my_driver.py`)
 
-Per tick it reads the TORCS sensors and sends `steer`, `accel`, `brake`, `gear`.
+Each step it reads the TORCS sensors and sends `steer`, `accel`, `brake` and `gear`.
 
-- **Steering:** classic angle/track-position controller, blended with the direction of the *longest* of the 19 track sensors (`aim_w`), then low-pass filtered (`smooth`).
-- **Target speed:** the speed from which the car can still stop in the free distance ahead (`decel`, `margin`), floored by `min_speed`. `mix` blends the straight-ahead distance with the longest-sensor distance so the car accelerates earlier out of corners.
-- **Throttle / brake:** proportional to (target − speed) with `accel_gain` / `brake_gain`.
-- **Traction control:** cuts throttle when rear wheels spin faster than front wheels (`tc_thresh`, `tc_cut`).
-- **Gears:** rpm based. The engine makes most power at 16–18 k rpm, so the car upshifts at `up_rpm` (16 500) and downshifts at `down_rpm` (10 000).
+- **Steering:** angle/track-position controller, blended with the direction of the longest track sensor (`aim_w`) and smoothed (`smooth`).
+- **Target speed:** the speed from which the car can still stop in the free distance ahead (`decel`, `margin`), at least `min_speed`.
+- **Throttle/brake:** proportional to target − speed. Traction control cuts throttle on rear wheelspin (`tc_thresh`, `tc_cut`).
+- **Gears (`shift_gear`):** shifts on the rpm computed from road speed, with a minimum hold time, downshift hysteresis and a mid-corner limit.
 
 All tunable values are in `best_params.json`.
 
-## Requirements
+## Setup
 
-- Windows (tested on Windows 11) with TORCS + the SCR `scr_server` driver
-- Python 3.8+ (tested on 3.13). Standard library only, no `pip install` needed for the driver.
+Folder layout: `working_space\RaceYourCode` (this repo), `working_space\torch\torcs` (organizers' TORCS),
+`working_space\torcs-env` (Python venv with numpy, needed only for `cmaes_search.py`). The driver and the runners use only the standard library.
 
-## TORCS setup (once)
-
-1. Start TORCS → **Race → Quick Race → Configure Race**.
-2. Track: **Corkscrew** (category *road*).
-3. Driver: **`scr_server`** (the driver the Python client controls).
-4. Laps: set to a high number (e.g. 20). With 1 lap TORCS shuts the server down at the finish and the race has to be restarted by hand; with many laps the runner restarts the race itself after the first lap, which is what the parameter search needs.
-5. (Optional, ~35× faster for searches) set `display mode` to `results only` in `config/raceman/quickrace.xml`. Remove it again if you want to watch the car.
+Run the commands below from this folder.
 
 ## Run
 
-1. In TORCS: **Race → Quick Race → New Race**. The screen stays blue/black and waits for a client (UDP port 3001).
-2. In a terminal, in this folder:
-
-```bash
-py lap_runner.py --driver mine --params-file best_params.json
-```
-
-Expected output:
+**Headless lap** (starts TORCS itself, no menus, about 2 s per lap):
 
 ```
-=== SONUC ===
-result: finished
-lap_time_s: 83.63
-off_track_s: 0.0
-max_damage: 0.0
+..\torcs-env\Scripts\python baseline\run_lap.py                     # 1 lap with best_params.json
+..\torcs-env\Scripts\python baseline\run_lap.py --race-xml baseline\corkscrew_3lap.xml --max-sim-s 400
+..\torcs-env\Scripts\python baseline\run_lap.py --robust 10 --jitter 0.001   # timing stress test
 ```
 
-Each run is appended to `runs.csv` (lap time, time off track, damage, parameters).
+**GUI race** (real time, watch the car):
 
-Useful options of `lap_runner.py`:
+1. Start `torch\torcs\wtorcs.exe` → Race → Quick Race → Configure Race: Corkscrew, only `scr_server 1`, number of laps.
+2. Race → Quick Race → New Race.
+3. `..\torcs-env\Scripts\python baseline\run_lap.py --attach --timing-log baseline\timing_gui.csv`
+4. Optional: `..\torcs-env\Scripts\python baseline\analyze_timing.py baseline\timing_gui.csv` (late answers, command lag)
 
-| Option | Meaning |
-|---|---|
-| `--driver mine` | our driver (`jm` = IBM sample driver) |
-| `--params-file FILE` / `--params JSON` | parameter set |
-| `--trace` | write `trace.csv` (position, speed, commands every 10 steps) |
-| `--max-seconds N` | simulated-time limit (default 300) |
-| `--tag TEXT` | note stored in `runs.csv` |
+**Robustness check** (20 variants with every parameter changed by ±1%, 3-lap race):
 
-### Re-running the parameter search
-
-```bash
-py search.py --n 100 --seed 1 --prefix s_
+```
+..\torcs-env\Scripts\python baseline\perturb_test.py --n 20
 ```
 
-Random search plus local refinement over the parameters listed in `SPACE` in `search.py`.
-Score = lap time + 3 × seconds off track + 0.05 × damage (unfinished laps get a large penalty).
-The best set is written to `best_params.json` (`--out FILE` to change). Use `--fix "{\"up_rpm\": 16500}"` to hold parameters constant.
-Stop with Ctrl+C; results already written to `runs.csv` are kept.
+**Parameter search** (CMA-ES): `..\torcs-env\Scripts\python cmaes_search.py --gens 40 --out results\my_run.json`
+
+Runner options and details: [baseline/README.md](baseline/README.md).
 
 ## Files
 
 | File | Purpose |
 |---|---|
 | `my_driver.py` | the driver |
-| `lap_runner.py` | runs one lap with a parameter set and measures it |
-| `search.py` | automatic parameter search |
-| `best_params.json` | best parameters (83.63 s) |
-| `torcs_jm_par.py` | SCR client / IBM sample driver from the competition starter kit (not our work); `lap_runner.py` uses its `Client` |
+| `best_params.json` | current parameters (E7). `best_params_e5.json` and `best_params_baseline.json` hold the earlier ones |
+| `baseline/run_lap.py` | headless or GUI lap runner: lap time, damage, off track, robust/jitter/timing modes |
+| `baseline/perturb_test.py` | ±1% sensitivity test |
+| `baseline/analyze_timing.py` | summary of a `--timing-log` |
+| `cmaes_search.py` | CMA-ES parameter search |
+| `EXPERIMENTS.md`, `results/` | experiment log and saved results |
+| `docs/lag_fix_proposal.md` | proposed fix for command lag after a late answer (not implemented, waiting for organizer approval) |
+| `lap_runner.py`, `search.py` | the first runner and random search (GUI, manual restart) |
+| `torcs_jm_par.py` | SCR client and IBM sample driver from the starter kit (not our work, unchanged) |
 
 ## IBM Granite and IBM SkillsBuild
 
@@ -100,7 +87,7 @@ _To be filled in by the team: how IBM Granite was used in this project and the S
 
 ## Kısa Türkçe özet
 
-1. TORCS'ta Quick Race → pist **Corkscrew**, sürücü **scr_server**, tur sayısı **20**.
-2. **Race → Quick Race → New Race** (mavi bekleme ekranı).
-3. Bu klasörde terminalde: `py lap_runner.py --driver mine --params-file best_params.json`
-4. Sonuç `runs.csv`'ye yazılır. En iyi temiz tur: **83,63 sn**.
+- Sonuç: Corkscrew, 1 tur, duran kalkış, **82,690 sn**, hasar 0, pist dışı 0. Parametreler ±%1 oynatıldığında 20 varyantın 20'si temiz.
+- Headless ölçüm: `..\torcs-env\Scripts\python baseline\run_lap.py`
+- GUI'de izlemek için: TORCS'ta Quick Race'i Corkscrew ve `scr_server 1` ile ayarlayıp New Race'e bas, sonra komuta `--attach` ekle.
+- Eski README'deki 83,63 sn başka bir ölçüm yönteminden geliyordu. Aynı parametreler burada 84,788 sn ölçülüyor.
