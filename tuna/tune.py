@@ -6,6 +6,7 @@ improvement, so the search can be stopped at any time with Ctrl+C.
 
     py tuna/tune.py --trials 300
     py tuna/tune.py --trials 300 --start tuna/params.json --out tuna/params_tuned.json
+    py tuna/tune.py --trials 150 --robust 4   # score = mean over the lap and 4 copies with +-3% parameter errors
 
 Every trial is logged to tuna/tune_log.csv.
 """
@@ -49,9 +50,14 @@ SPACE = {
     "line_in": (0.0, 0.7),
     "line_dist": (20.0, 150.0),
     "line_min_deg": (1.0, 20.0),
+    "rise_rate": (0.0, 200.0),
+    "slide_k": (0.0, 0.05),
+    "slide_thresh": (1.0, 15.0),
+    "edge_pos": (0.0, 0.95),
 }
 # values below these thresholds switch the feature off (0)
-OFF_BELOW = {"abs_slip": 0.05, "full_band": 2.0, "mu": 0.3, "line_out": 0.03, "line_in": 0.03}
+OFF_BELOW = {"abs_slip": 0.05, "full_band": 2.0, "mu": 0.3, "line_out": 0.03, "line_in": 0.03,
+             "rise_rate": 10.0, "slide_k": 0.002, "edge_pos": 0.5}
 BELOW_NORMAL = 0x00004000  # Windows process priority
 
 
@@ -79,6 +85,34 @@ def score(r):
     if not r["clean"]:
         s += 1000.0 + 10.0 * float(r["off_track_s"]) + float(r["max_damage"])
     return s
+
+
+def effective(r):
+    """Lap time of one run for the robust score: an unclean lap costs 5 s extra, an unfinished lap a lot."""
+    if r is None or r["result"] != "finished" or not r["lap_time_s"]:
+        return 200.0
+    return float(r["lap_time_s"]) + (0.0 if r["clean"] else 5.0)
+
+
+def make_perturbations(n, noise, seed=12345):
+    """Fixed multiplier sets, so every candidate is tested against the same small parameter errors."""
+    rnd = random.Random(seed)
+    return [{k: rnd.uniform(1.0 - noise, 1.0 + noise) for k in SPACE} for _ in range(n)]
+
+
+def evaluate(params, perturbs, give_up_above):
+    """Score = mean effective lap time over the nominal run and its perturbed copies.
+    The nominal lap must be clean; otherwise the plain (penalised) score is returned."""
+    r = run_lap(params)
+    s = score(r)
+    if not perturbs or s >= 1000.0 or s > give_up_above:
+        return s, r, None
+    times, clean = [s], 0
+    for m in perturbs:
+        rp = run_lap({k: (v * m[k] if k in m else v) for k, v in params.items()})
+        times.append(effective(rp))
+        clean += bool(rp and rp["clean"])
+    return sum(times) / len(times), r, clean
 
 
 def clip(v, lo, hi):
@@ -112,7 +146,11 @@ def main():
     ap.add_argument("--sigma", type=float, default=0.08, help="mutation size as a share of each range")
     ap.add_argument("--fix", default="{}", help="JSON of parameters to hold constant")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--robust", type=int, default=0,
+                    help="also run each candidate with this many perturbed parameter copies and score the mean")
+    ap.add_argument("--noise", type=float, default=0.03, help="relative parameter error for --robust")
     args = ap.parse_args()
+    perturbs = make_perturbations(args.robust, args.noise)
     random.seed(args.seed or time.time())
     fixed = json.loads(args.fix)
 
@@ -122,27 +160,27 @@ def main():
     best = {**DEFAULTS, **best, **fixed}  # missing keys get the driver defaults
     best = tidy(best)
 
-    r = run_lap(best)
-    best_s = score(r)
-    print(f"start: {best_s:.2f} {r}", flush=True)
+    best_s, r, clean = evaluate(best, perturbs, float("inf"))
+    print(f"start: {best_s:.2f} lap={r and r['lap_time_s']} perturbed_clean={clean}/{len(perturbs)}", flush=True)
     log_path = os.path.join(HERE, "tune_log.csv")
     new = not os.path.exists(log_path)
     log = open(log_path, "a", newline="", encoding="utf-8")
     w = csv.writer(log)
     if new:
-        w.writerow(["time", "trial", "score", "lap_time_s", "clean", "sigma", "params"])
+        w.writerow(["time", "trial", "score", "lap_time_s", "clean", "perturbed_clean", "sigma", "params"])
 
     sigma, fails = args.sigma, 0
     for t in range(1, args.trials + 1):
         cand = mutate(best, sigma, fixed)
-        r = run_lap(cand)
-        s = score(r)
+        # a nominal lap more than 1.5 s behind the best mean cannot win; skip its perturbed runs
+        s, r, clean = evaluate(cand, perturbs, best_s + 1.5)
         w.writerow([time.strftime("%H:%M:%S"), t, round(s, 2), r and r["lap_time_s"], r and r["clean"],
-                    round(sigma, 4), json.dumps(cand)])
+                    clean, round(sigma, 4), json.dumps(cand)])
         log.flush()
-        if s < best_s:
+        if s < best_s and (not perturbs or clean is not None):
             best, best_s, fails = cand, s, 0
-            print(f"[{t}] new best {s:.2f}", flush=True)
+            print(f"[{t}] new best {s:.2f} lap={r['lap_time_s']} perturbed_clean={clean}/{len(perturbs)}",
+                  flush=True)
             if s < 1000:
                 with open(args.out, "w", encoding="utf-8") as f:
                     json.dump({"score": s, "params": best}, f, indent=2)

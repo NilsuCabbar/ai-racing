@@ -71,8 +71,23 @@ def race_file(track):
     return name
 
 
+def port_free(port=3001):
+    """True when no other TORCS is listening on the scr_server port (it would steal the connection)."""
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.bind(("", port))
+        return True
+    except OSError:
+        return False
+    finally:
+        s.close()
+
+
 torcs = None
 if not args.gui:
+    if not port_free():
+        sys.exit("UDP port 3001 is in use: another TORCS is running. Close it and try again.")
     torcs = subprocess.Popen([os.path.join(args.torcs, "wtorcs.exe"), "-r", race_file(args.track)],
                              cwd=args.torcs, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(2)

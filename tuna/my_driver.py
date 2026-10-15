@@ -18,6 +18,7 @@ DEFAULTS = {
     "center_k": 0.5,        # pull towards the target line (trackPos gain)
     "brake_gain": 0.04,     # brake per km/h above target
     "accel_gain": 0.05,     # throttle per km/h below target
+    "max_gear": 6,          # the car has 7 gears, but the kit client (torcs_jm_par.py) turns gear 7 into neutral
     "up_rpm": 7500.0,
     "down_rpm": 3500.0,
     "tc_thresh": 4.0,       # cut throttle if rear-front wheel spin difference (rad/s) exceeds this
@@ -37,6 +38,11 @@ DEFAULTS = {
     "chord_k": 50.0,        # m, sight-distance cap on the corner radius: R <= D_max^2 / chord_k
     # trail braking: less brake while steering, so the front wheels keep grip
     "brake_steer": 0.0,     # brake is scaled by (1 - brake_steer * |steer|)
+    # safety nets that allow a more aggressive corner speed
+    "rise_rate": 0.0,       # km/h per s, max rise of the target speed (0 = off)
+    "slide_k": 0.0,         # target reduction per km/h of sideways speed above slide_thresh (0 = off)
+    "slide_thresh": 5.0,    # km/h of sideways speed (speedY) that is still fine
+    "edge_pos": 0.0,        # |trackPos| above which throttle is cut while moving outwards (0 = off)
     # racing line: outside before a corner, inside at the apex
     "line_out": 0.0,        # trackPos offset towards the outside before a corner (0 = off)
     "line_in": 0.0,         # trackPos offset towards the inside in the corner
@@ -48,8 +54,9 @@ BEAMS_DEG = [-45, -19, -12, -7, -4, -2.5, -1.7, -1, -0.5, 0, 0.5, 1, 1.7, 2.5, 4
 FRONT_WHEEL_R = 0.3024  # m, 12 in rim + 150 mm tyre wall (car1-ow1)
 REAR_WHEEL_R = 0.3151   # m, 13 in rim + 150 mm tyre wall
 G = 9.81
+STEP_DT = 0.02  # s, TORCS calls the driver 50 times per second
 
-_state = {"gear": 1, "steer": 0.0}
+_state = {"gear": 1, "steer": 0.0, "target": None, "pos": None}
 
 
 def _clip(v, lo, hi):
@@ -115,7 +122,21 @@ def drive(c, p=None):
     target = _clip(v_allowed, prm["min_speed"], prm["max_speed"])
     # slow down a bit more when the steering is heavily loaded
     target *= 1.0 - prm["steer_slow"] * abs(R["steer"])
+    # slide guard: the car is sliding sideways, so the corner is faster than its grip
+    if prm["slide_k"] > 0:
+        target *= _clip(1.0 - prm["slide_k"] * max(0.0, abs(S["speedY"]) - prm["slide_thresh"]), 0.3, 1.0)
     target = max(prm["min_speed"], target)
+    # the target may drop at once but only rises at rise_rate (km/h per second), so a single
+    # optimistic sensor reading cannot open the throttle fully
+    if prm["rise_rate"] > 0 and _state["target"] is not None:
+        target = min(target, _state["target"] + prm["rise_rate"] * STEP_DT)
+    _state["target"] = target
+
+    # edge guard: near the edge and still moving outwards -> no throttle
+    pos = S["trackPos"]
+    outward = _state["pos"] is not None and abs(pos) > abs(_state["pos"])
+    _state["pos"] = pos
+    edge = prm["edge_pos"] > 0 and abs(pos) > prm["edge_pos"] and outward
 
     # --- throttle / brake ---
     if speed > target:
@@ -135,6 +156,8 @@ def drive(c, p=None):
             R["accel"] = _clip((target - speed) / prm["full_band"], 0.1, 1.0)
         else:
             R["accel"] = _clip((target - speed) * prm["accel_gain"] + 0.1, 0.0, 1.0)
+        if edge:
+            R["accel"] = 0.0
 
     # --- traction control: cut throttle when the rear wheels spin faster than the front wheels ---
     w = S["wheelSpinVel"]
@@ -145,7 +168,7 @@ def drive(c, p=None):
     g = _state["gear"]
     if speed < 1:
         g = 1
-    elif S["rpm"] > prm["up_rpm"] and g < 6:
+    elif S["rpm"] > prm["up_rpm"] and g < prm["max_gear"]:
         g += 1
     elif S["rpm"] < prm["down_rpm"] and g > 1:
         g -= 1
