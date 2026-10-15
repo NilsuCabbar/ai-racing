@@ -13,6 +13,10 @@
     "up_rpm": 16500,
     "down_rpm": 10000,
     "tc_thresh": 13.754,
-    "tc_cut": 0.531
+    "tc_cut": 0.531,
+    "shift_hold": 0.0,
+    "gear_hyst": 1500.0,
+    "corner_steer": 0.3,
+    "corner_down_rpm": 7000.0
   }
 }

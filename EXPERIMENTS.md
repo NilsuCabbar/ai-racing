@@ -19,3 +19,13 @@ Corkscrew, 1 lap, standing start, car1-ow1 (`scr_server`). All runs are headless
 
 Notes on E1: the ad hoc crashes (3/6) were the first runs after setup (cold start). Later, 10/10 were clean.
 Most crashes happen at the Corkscrew (2.44–2.53 km) or in the last corners (~3.3 km).
+| 2026-10-15 | E2 gear fix, hold 0.2 s | `shift_gear()`: road-speed rpm, min hold, downshift hysteresis, corner limit | 84.856 | 0 | 10 (0) / 10 (0.001) | 0/10 / 8/10 | 84.856 / 88.857 (mean, jitter) | 0 / 153 |
+| 2026-10-15 | E2 gear fix, hold 0.3 s | same, `shift_hold` 0.3 | 86.418 | 0 | 10 (0) / 10 (0.001) | 0/10 / 8/10 | 86.418 / 90.704 (mean, jitter) | 0 / 537 |
+| 2026-10-15 | E1 rerun for E2 | old shifting, same session | 84.788 | 0 | 10 (0) / 10 (0.001) | 0/10 / 7/10 | 84.788 / 84.809 (mean, jitter) | 0 / 177 |
+
+Notes on E2: the clean deterministic lap has only 1 quick 1-2-1 reversal and 1 two-gear jump (3 to 1 under hard braking).
+The 3-1-6 jumps seen before appear only once the delayed car is already sliding, so they are a symptom.
+The fix does not lower the crash rate, and the other parameters were tuned for the old shifting.
+`shift_gear()` stays in, but off (`shift_hold: 0` = old behaviour), and its parameters go to the CMA-ES search.
+The real cause under jitter is the accumulated command lag: each late answer adds one 20 ms step for the rest of the lap.
+

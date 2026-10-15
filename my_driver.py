@@ -23,11 +23,21 @@ DEFAULTS = {
     "aim_sign": -1.0,       # isin acisi isaretinin yonu (+1 / -1), arama disi
     "mix": 0.0,             # 0..1, hedef hizda on mesafe yerine en uzun isin mesafesi payi
     "smooth": 0.0,          # 0..0.9, direksiyon alcak gecirgen filtre (yuksek = yumusak)
+    # vites (shift_gear). shift_hold=0 -> eski davranis (olculen rpm, her tick vites)
+    "shift_hold": 0.0,      # s, iki vites degisimi arasi en az sure
+    "gear_hyst": 1500.0,    # rpm, dusurunce alt viteste en az up_rpm - gear_hyst kalmali (hemen geri takmasin)
+    "corner_steer": 0.3,    # |steer| bunun ustundeyse viraj sayilir
+    "corner_down_rpm": 7000.0,  # virajda ancak yol devri bunun altina inerse vites dusur
 }
 
 BEAMS_DEG = [-45, -19, -12, -7, -4, -2.5, -1.7, -1, -0.5, 0, 0.5, 1, 1.7, 2.5, 4, 7, 12, 19, 45]
 
-_state = {"gear": 1, "steer": 0.0}
+# car1-ow1 vites oranlari (torcs/drivers/scr_server/0/default.xml) ve
+# motor devri / (km/h * vites orani): kaymasiz surusten olculdu (baseline/trace.csv, 4.-6. vites ~40.5)
+GEAR_RATIOS = [3.9, 2.9, 2.3, 1.87, 1.68, 1.54]
+RPM_PER_KMH_RATIO = 40.5
+
+_state = {"gear": 1, "steer": 0.0, "since_shift": 0}
 
 
 def _clip(v, lo, hi):
@@ -76,13 +86,40 @@ def drive(c, p=None):
     if (w[2] + w[3]) - (w[0] + w[1]) > prm["tc_thresh"]:
         R["accel"] = max(0.0, R["accel"] - prm["tc_cut"])
 
-    # --- vites (devire gore) ---
+    R["gear"] = shift_gear(S, prm, R["steer"])
+
+
+def shift_gear(S, prm, steer):
+    """Vites secimi. Patinaj/havalanmada olculen rpm sicradigi icin karar hizdan hesaplanan
+    "yol devri" ile verilir; en az shift_hold s bekler, inerken histerezis ve viraj siniri uygular."""
     g = _state["gear"]
+    speed = S["speedX"]
+    if prm["shift_hold"] <= 0:  # eski davranis: olculen rpm, her tick degisebilir
+        if speed < 1:
+            g = 1
+        elif S["rpm"] > prm["up_rpm"] and g < 6:
+            g += 1
+        elif S["rpm"] < prm["down_rpm"] and g > 1:
+            g -= 1
+        _state["gear"] = g
+        return g
+
+    _state["since_shift"] += 1
     if speed < 1:
-        g = 1
-    elif S["rpm"] > prm["up_rpm"] and g < 6:
-        g += 1
-    elif S["rpm"] < prm["down_rpm"] and g > 1:
-        g -= 1
-    _state["gear"] = g
-    R["gear"] = g
+        _state["gear"] = 1
+        return 1
+    if _state["since_shift"] * 0.02 < prm["shift_hold"]:
+        return g
+    road_rpm = speed * RPM_PER_KMH_RATIO * GEAR_RATIOS[g - 1]
+    new_g = g
+    if road_rpm > prm["up_rpm"] and g < 6:
+        new_g = g + 1
+    elif road_rpm < prm["down_rpm"] and g > 1:
+        lower_rpm = speed * RPM_PER_KMH_RATIO * GEAR_RATIOS[g - 2]
+        cornering = abs(steer) > prm["corner_steer"]
+        if lower_rpm < prm["up_rpm"] - prm["gear_hyst"] and (not cornering or road_rpm < prm["corner_down_rpm"]):
+            new_g = g - 1
+    if new_g != g:
+        _state["gear"] = new_g
+        _state["since_shift"] = 0
+    return new_g
