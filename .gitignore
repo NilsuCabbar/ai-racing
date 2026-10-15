@@ -4,3 +4,4 @@ drive_log.csv
 *.log
 __pycache__/
 *.pyc
+.claude/settings.local.json
