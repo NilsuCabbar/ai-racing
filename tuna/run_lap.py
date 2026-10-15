@@ -1,10 +1,11 @@
-"""Runs one lap of the tuna/ driver (my_driver.py + params.json) on Corkscrew and measures it.
+"""Runs one lap of the tuna/ driver (my_driver.py + params.json) and measures it (Corkscrew by default).
 
 By default it starts TORCS without menus (-r) and closes it after the lap. One lap takes ~12 s.
     py tuna/run_lap.py
     py tuna/run_lap.py --params tuna/params.json --tag "first try"
     py tuna/run_lap.py --trace        # tuna/trace.csv: per-step telemetry
     py tuna/run_lap.py --segments     # summary per 100 m section
+    py tuna/run_lap.py --track e-track-2   # another track, to check the driver is not overfitted
     py tuna/run_lap.py --gui          # start TORCS yourself: Race -> Quick Race -> New Race (to watch)
 
 Each result is appended to tuna/results.csv. "clean" = lap finished, damage 0, never off track.
@@ -22,12 +23,16 @@ ROOT = os.path.dirname(HERE)
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--params", default=os.path.join(HERE, "params.json"))
+ap.add_argument("--set", default="{}", help='JSON overrides on top of --params, e.g. \'{"decel": 20}\'')
+ap.add_argument("--quiet", action="store_true", help="print only one summary line")
+ap.add_argument("--no-save", action="store_true", help="do not append to tuna/results.csv")
 ap.add_argument("--torcs", default=r"C:\torcs", help="TORCS folder")
 ap.add_argument("--gui", action="store_true", help="do not start TORCS; wait for New Race in an open TORCS")
 ap.add_argument("--trace", action="store_true", help="write tuna/trace.csv")
 ap.add_argument("--segments", action="store_true", help="print a summary per 100 m section")
 ap.add_argument("--max-seconds", type=float, default=200.0)
 ap.add_argument("--tag", default="")
+ap.add_argument("--track", default="corkscrew", help="any folder name under C:\\torcs\\tracks\\*, e.g. e-track-2")
 args = ap.parse_args()
 
 sys.path.insert(0, HERE)  # tuna/my_driver.py
@@ -42,11 +47,33 @@ import my_driver  # noqa: E402
 with open(args.params, encoding="utf-8") as f:
     p = json.load(f)
 p = p.get("params", p)
+p.update(json.loads(args.set))
 
 STEP_DT = 0.02
+
+
+def race_file(track):
+    """Quick race config for the track: the normal one for corkscrew, otherwise a copy with the track swapped."""
+    base = r"config\raceman\quickrace.xml"
+    if track == "corkscrew":
+        return base
+    cats = [c for c in os.listdir(os.path.join(args.torcs, "tracks"))
+            if os.path.isdir(os.path.join(args.torcs, "tracks", c, track))]
+    if not cats:
+        sys.exit(f"unknown track: {track}")
+    with open(os.path.join(args.torcs, base), encoding="utf-8") as f:
+        xml = f.read()
+    xml = xml.replace('val="corkscrew"', f'val="{track}"').replace('<attstr name="category" val="road"/>',
+                                                                   f'<attstr name="category" val="{cats[0]}"/>')
+    name = rf"config\raceman\tuna_{track}.xml"
+    with open(os.path.join(args.torcs, name), "w", encoding="utf-8") as f:
+        f.write(xml)
+    return name
+
+
 torcs = None
 if not args.gui:
-    torcs = subprocess.Popen([os.path.join(args.torcs, "wtorcs.exe"), "-r", r"config\raceman\quickrace.xml"],
+    torcs = subprocess.Popen([os.path.join(args.torcs, "wtorcs.exe"), "-r", race_file(args.track)],
                              cwd=args.torcs, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(2)
 else:
@@ -63,7 +90,7 @@ try:
             result = "finished"
             break
         S = C.S.d
-        if prev_dist is not None and step > 500 and prev_dist - S["distFromStart"] > 1500:
+        if prev_dist is not None and step > 500 and prev_dist > 500 and S["distFromStart"] < 0.5 * prev_dist:
             result, lap_time = "finished", round(last_cur, 2)  # crossed the start line
             break
         prev_dist = S["distFromStart"]
@@ -104,18 +131,23 @@ out = {
     "tag": args.tag,
     "params": json.dumps(p),
 }
-print("\n=== RESULT ===")
-for k, v in out.items():
-    if k != "params":
-        print(f"{k}: {v}")
+if args.quiet:
+    print(f"\n{result} lap={lap_time} clean={clean} off={off_s} dmg={max_damage} tag={args.tag}")
+else:
+    print("\n=== RESULT ===")
+    for k, v in out.items():
+        if k != "params":
+            print(f"{k}: {v}")
+print("RESULT_JSON " + json.dumps({k: out[k] for k in ("result", "lap_time_s", "clean", "off_track_s", "max_damage", "dist_m")}))
 
-res = os.path.join(HERE, "results.csv")
-new = not os.path.exists(res)
-with open(res, "a", newline="", encoding="utf-8") as f:
-    w = csv.DictWriter(f, fieldnames=list(out))
-    if new:
-        w.writeheader()
-    w.writerow(out)
+if not args.no_save:
+    res = os.path.join(HERE, "results.csv")
+    new = not os.path.exists(res)
+    with open(res, "a", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(out))
+        if new:
+            w.writeheader()
+        w.writerow(out)
 
 if args.trace:
     with open(os.path.join(HERE, "trace.csv"), "w", newline="", encoding="utf-8") as f:
@@ -127,8 +159,9 @@ if args.trace:
 if args.segments:
     print("\n  dist  time_s  avg_kmh  min_kmh  brake_s  max|pos|")
     seg = {}
+    start = rows[0][0] if rows else 0.0
     for r in rows:
-        if r[0] > 3500 and len(seg) == 0:
+        if len(seg) == 0 and start > 500 and r[0] > 0.5 * start:
             continue  # standing start behind the start line
         s = seg.setdefault(int(r[0] // 100), [0, 0.0, 1e9, 0, 0.0])
         s[0] += 1
