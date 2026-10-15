@@ -15,6 +15,7 @@ import argparse
 import csv
 import json
 import os
+import random
 import re
 import subprocess
 import sys
@@ -42,6 +43,15 @@ ap.add_argument("--wall-timeout", type=float, default=600.0, help="kill everythi
 ap.add_argument("--trace", action="store_true", help="write baseline/trace.csv every 5 steps")
 ap.add_argument("--tag", default="")
 ap.add_argument("--out", default=os.path.join(HERE, "runs.csv"))
+ap.add_argument("--robust", type=int, default=0, metavar="N",
+                help="robustness test: N separate laps with --robust-timeout-us, report crash rate / times / max damage")
+ap.add_argument("--robust-timeout-us", type=int, default=0,
+                help="UDP timeout for --robust laps; 0 = TORCS default (10 ms), like a normal race")
+ap.add_argument("--jitter", type=float, default=0.0, metavar="P",
+                help="stress test: each step, with probability P the client answers 15 ms late (> the 10 ms default "
+                     "timeout), so scr_server reuses the old command and every later command arrives one step later")
+ap.add_argument("--seed", type=int, default=0, help="seed for --jitter (robust run i uses seed+i)")
+ap.add_argument("--json", action="store_true", help="print the result as one 'JSON {...}' line at the end")
 args = ap.parse_args()
 
 STEP_DT = 0.02  # scr_server: 50 control steps per simulated second
@@ -57,6 +67,58 @@ if pf:
     params = loaded.get("params", loaded)
 if args.params:
     params.update(json.loads(args.params))
+
+
+def is_crash(r):
+    return r.get("status") != "finished" or float(r.get("damage") or 0) > 0
+
+
+# ---------- robust mode: N single laps, each in its own process ----------
+if args.robust > 0:
+    runs = []
+    for i in range(args.robust):
+        child = [sys.executable, "-W", "ignore", os.path.abspath(__file__), "--json",
+                 "--driver", args.driver, "--params-file", "", "--params", json.dumps(params),
+                 "--code-dir", args.code_dir, "--torcs-dir", args.torcs_dir, "--race-xml", args.race_xml,
+                 "--port", str(args.port), "--udp-timeout-us", str(args.robust_timeout_us),
+                 "--max-sim-s", str(args.max_sim_s), "--wall-timeout", str(args.wall_timeout),
+                 "--jitter", str(args.jitter), "--seed", str(args.seed + i),
+                 "--out", args.out, "--tag", f"{args.tag}#robust{i + 1}"]
+        out = subprocess.run(child, capture_output=True, text=True).stdout
+        lines = [ln for ln in out.splitlines() if ln.startswith("JSON ")]
+        r = json.loads(lines[-1][5:]) if lines else {"status": "error"}
+        runs.append(r)
+        print(f"  [{i + 1}/{args.robust}] {r.get('status')}  lap={r.get('lap_time_s')}  damage={r.get('damage')}"
+              f"  dist={r.get('dist_raced_m')}{'  CRASH' if is_crash(r) else ''}", flush=True)
+    clean_times = [float(r["lap_time_s"]) for r in runs if not is_crash(r)]
+    summary = {
+        "time": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "driver": args.driver,
+        "n": len(runs),
+        "crashes": sum(is_crash(r) for r in runs),
+        "crash_rate": round(sum(is_crash(r) for r in runs) / len(runs), 3),
+        "mean_lap_s": round(sum(clean_times) / len(clean_times), 3) if clean_times else "",
+        "best_lap_s": min(clean_times) if clean_times else "",
+        "worst_lap_s": max(clean_times) if clean_times else "",
+        "max_damage": max(float(r.get("damage") or 0) for r in runs),
+        "udp_timeout_us": args.robust_timeout_us or "default",
+        "jitter": args.jitter,
+        "params": json.dumps(params, sort_keys=True),
+        "tag": args.tag,
+    }
+    print("\n=== ROBUST ===")
+    for k, v in summary.items():
+        print(f"{k:>16}: {v}")
+    robust_csv = os.path.join(os.path.dirname(args.out), "robust.csv")
+    new = not os.path.exists(robust_csv)
+    with open(robust_csv, "a", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=list(summary))
+        if new:
+            w.writeheader()
+        w.writerow(summary)
+    if args.json:
+        print("JSON " + json.dumps(summary))
+    sys.exit(0)
 
 # ---------- start TORCS headless ----------
 wtorcs = os.path.join(args.torcs_dir, "wtorcs.exe")
@@ -102,6 +164,8 @@ else:
         drv.GEAR_SPEEDS = [int(x) for x in params["gear_thresholds"]]
     drive_fn = drv.drive_modular
 
+rng = random.Random(args.seed)
+late_steps = 0
 wall0 = time.time()
 C = drv.Client(p=args.port)
 
@@ -125,6 +189,9 @@ for steps in range(1, int(args.max_sim_s / STEP_DT) + 1):
         break
     S = C.S.d
     drive_fn(C)
+    if args.jitter and rng.random() < args.jitter:
+        late_steps += 1
+        time.sleep(0.015)
     C.respond_to_server()
     if abs(S["trackPos"]) > 1.0:
         off_steps += 1
@@ -172,6 +239,8 @@ row = {
     "top_speed_kmh": round(top_speed, 1),
     "dist_raced_m": round(dist_raced, 1),
     "sim_steps": steps,
+    "late_steps": late_steps,
+    "udp_timeout_us": args.udp_timeout_us or "default",
     "wall_s": round(wall_s, 1),
     "params": json.dumps(params, sort_keys=True),
     "tag": args.tag,
@@ -186,4 +255,6 @@ with open(args.out, "a", newline="", encoding="utf-8") as f:
     if new:
         w.writeheader()
     w.writerow(row)
+if args.json:
+    print("JSON " + json.dumps(row))
 sys.exit(0 if status == "finished" else 1)
