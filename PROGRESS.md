@@ -1,4 +1,4 @@
-Şu anki en iyi: 79,556 sn (commit 296893c)
+Şu anki en iyi: 76,598 sn (commit 46fb967)
 
 # İlerleme: Corkscrew, 1 tur, duran kalkış
 
@@ -23,5 +23,5 @@ en az 19'u temiz. "Fark", o ana kadarki en iyi kabul edilen sonuca göredir. Ayr
 | E16a | 2026-10-16 | Tutunma merdiveni: tablo tutunması × 0,90 (E15 sürücüsü). | `mapped/table.csv` | 80,060 | +0,504 | 0 / 0 s (3 tur temiz) | 20/20 | Kabul (merdivenin son geçen adımı; E9'dan yavaş, en iyi değişmedi) | d292cfe |
 | E16b | 2026-10-16 | Tutunma × 0,95. | `mapped/table.csv` (aday) | – (tur tamamlanmadı) | – | hasar 1 (2496 m) / pist dışı (3295 m'de döndü) | – | Red (Corkscrew tepesinde inişte hasar, #13 çıkışında spin) | d292cfe |
 | E16c | 2026-10-16 | Tutunma × 0,95, sadece #10 için yerel pay (× 0,947). | `mapped/table.csv` (aday) | 95,088 | +15,532 | hasar 1 / 8,5 s pist dışı | – | Red (araç orada zaten hedefin altında; yerel pay etkisiz) | d292cfe |
-| E17a | 2026-10-16 | Hız modelinde fren geçişi hatası düzeltildi (fren tutunması bilinen hızla), mu 2,393'e yeniden kalibre; tutunma 0,90. | `mapped/line.py`, `mapped/table.csv` (aday) | 85,454 | +5,898 | hasar 64 / 2,8 s pist dışı (Corkscrew tepesi, 2478–2491 m) | – | Red (tepe modeli olmadan geç fren tepede kaza) | E17_COMMIT |
-| E17b | 2026-10-16 | Yükseklik spline'ı ve tepe modeli: tepede tutunma/fren/çekiş × (1 − v²·κ/g), mu 2,596; tutunma 0,90. | `mapped/track.py`, `mapped/line.py`, `mapped/build_table.py`, `mapped/table.csv` | 76,598 | −2,958 | 0 / 0 s (3 tur temiz) | 20/20 | Kabul (yeni en iyi) | E17_COMMIT |
+| E17a | 2026-10-16 | Hız modelinde fren geçişi hatası düzeltildi (fren tutunması bilinen hızla), mu 2,393'e yeniden kalibre; tutunma 0,90. | `mapped/line.py`, `mapped/table.csv` (aday) | 85,454 | +5,898 | hasar 64 / 2,8 s pist dışı (Corkscrew tepesi, 2478–2491 m) | – | Red (tepe modeli olmadan geç fren tepede kaza) | 46fb967 |
+| E17b | 2026-10-16 | Yükseklik spline'ı ve tepe modeli: tepede tutunma/fren/çekiş × (1 − v²·κ/g), mu 2,596; tutunma 0,90. | `mapped/track.py`, `mapped/line.py`, `mapped/build_table.py`, `mapped/table.csv` | 76,598 | −2,958 | 0 / 0 s (3 tur temiz) | 20/20 | Kabul (yeni en iyi) | 46fb967 |
