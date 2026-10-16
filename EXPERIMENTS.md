@@ -208,3 +208,67 @@ no other team's code or data.
     start of `s1`, and the map lines up with distFromStart to well under 0.5 m.
 - Beam convention confirmed: angle = track heading − car heading, negative beam angles point left, beams measure to
   the main-track edge (±6 m), not to the borders or curbs.
+
+| 2026-10-16 | E11 track map, step 2: racing line | `mapped/line.py`: K1999-style line for edge limits 0.6 / 0.75 / 0.9 and a point-mass lap estimate; not driven | (model) 74.42 for 0.75 | – | – | – | – | – |
+
+Notes on E11: nothing is driven yet; these are model numbers. Script: `mapped/step2_report.py`, full output
+`results/e11_step2_report.txt`, drawings `results/e11_lines.svg`, `e11_lines_corkscrew.svg`, `e11_lines_hairpin.svg`.
+
+- **Line**: the centreline shifted along its normal by l(s), |l| <= limit × 6 m. Each point is moved along its normal
+  until its curvature equals the mean of its two neighbours' (even/odd Jacobi steps, coarse to fine: every 32nd point
+  down to every point, 1 m spacing). On free points the remaining mismatch is below 1e-4 1/m. The limit is
+  a parameter (`racing_line(t, tp_max)`). The car's centre stays on the line, so with limit 0.9 the outer wheels can be
+  on the curbs, which is allowed; |trackPos| never exceeds the limit (table below).
+- **Speed model** (also step 3's tool; used here only for the lap estimates): v <= sqrt(mu g / |k|); forward pass with a
+  full-throttle table measured on the E9 lap (12 m/s² up to 170 km/h, 9 at 190, 4 at 250); backward pass with
+  3.0 g braking (E9 brakes at 2.4–2.5 g with only 0.4–0.5 brake); friction circle; standing start 10 m before the line.
+- **Calibration**: on the map, E9's own line (trackPos smoothed ±8 m) shows 1.8 g at 50 km/h and 2.0–2.4 g (p90) at
+  60–160 km/h, with sideways slip, so the car is near its grip there (downforce). A first estimate of 1.2–1.3 g was wrong:
+  its curvature formula was half too small. mu is set so that the model gives E9's real 79.556 s on E9's own line:
+  **mu = 2.70**, above the measured 2.0–2.4 g, because the model has no downforce growth with speed and E9's line is
+  noisy. So the absolute lap estimates are rough (±10 % mu ≈ ±2.5 s); the comparison of lines inside the same model
+  is the useful part.
+
+| limit |trackPos| | max |trackPos| on line | path length (m) | tightest radius (m) | est. lap (s) | vs E9 (s) | mu -10% / +10% (s) |
+|---|---|---|---|---|---|---|
+| 0.6 | 0.600 | 3572.7 | 22.4 | 75.39 | -4.16 | 77.91 / 73.24 |
+| 0.75 | 0.750 | 3565.2 | 24.4 | 74.42 | -5.13 | 76.99 / 72.24 |
+| 0.9 | 0.900 | 3557.8 | 26.5 | 73.60 | -5.95 | 76.22 / 71.34 |
+| centreline (0) | 0 | 3608.4 | 11.5 | 80.16 | +0.60 | |
+| E9 driven line | 0.928 | 3573.5 | 13.7 | 79.556 (real) | 0 | |
+
+The racing line is shorter (3565 m vs 3573 m for E9 and 3608 m for the centreline) and its tightest radius is about twice
+E9's (24 m vs 14 m). Each extra 0.15 of trackPos is worth about 0.9 s in the model. The 0.75 estimate (74.4 s) is close to
+the built-in robot `inferno` (about 74.65 s from a standing start, Tuna's README); `inferno` reads the track itself.
+
+Per corner, E9's line vs the 0.75 line (trackPos relative to the corner: + = outside; corner stretches split halfway
+between corners, no overlap; model times use the same mu on both lines):
+
+| # | from-to (m) | turn | angle | min centre radius | E9 trackPos entry/apex/exit | line entry/apex/exit | min path radius E9 / line (m) | min speed E9 real / line model (km/h) | stretch (m) | model time E9 line / racing line (s) | gain (s) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 185-221 | L | 25 deg | 86.5 | -0.77/-0.77/-0.50 | -0.51/-0.51/-0.53 | 91 / 345 | 176 / 225 | 125-281 | 2.80 / 2.45 | +0.35 |
+| 2 | 407-540 | L | 197 deg | 24.0 | -0.80/-0.13/+0.15 | -0.08/-0.62/+0.28 | 25 / 35 | 83 / 109 | 347-564 | 6.31 / 6.21 | +0.10 |
+| 3 | 589-638 | R | 17 deg | 105.7 | -0.71/-0.71/-0.69 | -0.75/-0.75/-0.06 | 187 / 243 | 178 / 182 | 564-685 | 2.19 / 2.29 | -0.09 |
+| 4 | 733-806 | R | 94 deg | 44.2 | -0.80/-0.80/-0.06 | +0.02/+0.02/-0.06 | 35 / 53 | 98 / 135 | 685-866 | 4.60 / 4.28 | +0.32 |
+| 5 | 995-1074 | R | 71 deg | 48.0 | -0.78/-0.33/-0.27 | +0.00/-0.33/-0.21 | 49 / 81 | 128 / 167 | 935-1134 | 4.40 / 3.86 | +0.54 |
+| 6 | 1477-1612 | L | 116 deg | 48.0 | -0.77/-0.50/-0.20 | +0.14/-0.75/+0.36 | 45 / 56 | 116 / 138 | 1417-1672 | 5.65 / 5.68 | -0.03 |
+| 7 | 1918-1949 | L | 55 deg | 33.6 | -0.80/-0.80/-0.09 | -0.42/-0.42/-0.35 | 31 / 87 | 110 / 173 | 1858-2009 | 3.84 / 2.94 | +0.90 |
+| 8 | 2351-2378 | R | 17 deg | 62.5 | -0.76/-0.76/-0.40 | -0.50/-0.50/-0.75 | 130 / 249 | 208 / 167 | 2291-2405 | 1.82 / 2.19 | -0.37 |
+| 9 | 2432-2469 | L | 103 deg | 11.5 | -0.81/+0.83/+0.87 | +0.10/-0.64/-0.55 | 14 / 26 | 54 / 95 | 2405-2476 | 3.00 / 2.51 | +0.50 |
+| 10 | 2484-2597 | R | 102 deg | 14.4 | -0.86/-0.86/+0.38 | -0.56/-0.56/+0.50 | 15 / 37 | 70 / 113 | 2476-2597 | 3.84 / 3.05 | +0.79 |
+| 11 | 2598-2784 | L | 121 deg | 48.0 | -0.41/-0.79/-0.26 | -0.52/-0.69/-0.14 | 58 / 70 | 137 / 155 | 2597-2844 | 5.25 / 5.06 | +0.20 |
+| 12 | 2943-3020 | R | 81 deg | 52.8 | -0.79/-0.29/-0.23 | +0.03/-0.25/-0.09 | 47 / 69 | 119 / 154 | 2883-3080 | 4.46 / 4.15 | +0.31 |
+| 13 | 3250-3286 | L | 116 deg | 18.3 | -0.81/-0.42/+0.83 | -0.14/-0.70/-0.14 | 14 / 24 | 48 / 91 | 3190-3346 | 5.32 / 4.90 | +0.42 |
+
+Corner stretches sum to +3.91 s, the straights to the remaining 1.22 s. Where the line differs most:
+- **The Corkscrew (2432–2597 m, #9–#10)**: E9 runs wide (+0.83/+0.87 outside in the left part, radius 14–15 m).
+  The line straightens the S (radius 26 m and 37 m, min model speed 95 / 113 km/h vs 54 / 70 km/h real for E9): +1.29 s.
+- **#7 (1918–1949 m)**: E9 stays on the inside (−0.80) all through (31 m); the line uses the whole corner (87 m): +0.90 s.
+- **#5 and #4 (733–1074 m)**: E9 enters on the inside (−0.80/−0.78); the line enters near the middle: +0.86 s.
+- **#13, last hairpin (3250–3286 m)**: E9 is pushed out to +0.83 at the exit; the line holds −0.70 at the apex: +0.42 s.
+- **#8 (2351 m)** shows −0.37 s: the model starts braking there for the Corkscrew at 3 g, while E9 really carries 208 km/h
+  and brakes later and harder. Braking points will need tuning once it drives.
+- E9 drives with almost no "outside-in": its entry trackPos is −0.7…−0.86 (inside) in 11 of 13 corners.
+
+Line tables (distFromStart → trackPos, offset, curvature, radius, model speed): `mapped/line_tp060.csv`,
+`mapped/line_tp075.csv`, `mapped/line_tp090.csv`.
