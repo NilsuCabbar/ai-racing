@@ -147,3 +147,37 @@ drifting out). In the two slow corners it is the reverse of outside-in: inside a
 wide (Tuna Corkscrew +0.57 at minimum speed; last hairpin −0.35 → +0.29 → +0.76 at the exit; E7 the same, +0.21 / +0.12
 → +0.76). The time comes from corner speed, the tie-break and the throttle band, not from the line. A real outside-in line is still untried and may be the largest gap left
 (the built-in robot `inferno` does ~74.65 s, Tuna's README).
+
+| 2026-10-16 | E9 CMA-ES on Tuna's driver | `fast/` (copy of `tuna/`), `fast/cmaes_fast.py`, 40 generations from `tuna/params.json`; `fast/params.json` = `e9_g040_05` | **79.556** | 0 | – | – | – | – |
+
+Notes on E9: `fast/my_driver.py` is an unchanged copy of `tuna/my_driver.py` (only the docstring says so); `tuna/` is untouched.
+Only the parameters changed. Search (`fast/cmaes_fast.py`, numpy CMA-ES, as in E4 but on Tuna's driver):
+
+- 22 parameters, bounds in `SPACE`; features that Tuna's search switched off (`abs_slip`, `rise_rate`, `edge_pos`,
+  `line_in`) stay off. Population 13, 40 generations, 521 one-lap runs and 76 screens in 50 min (one TORCS at a time).
+- Step size: σ = 0.05 of each range (E4's value) crashed 4/4 candidates in the Corkscrew. σ = 0.02 / 0.01 gave 8/10 and
+  9/10 clean laps, so the run used σ = 0.015 (it ended at 0.011). Over the run: 377 clean, 119 off track, 25 crashes.
+- Score = deterministic 1-lap time; off track = lap + 100 + 10 × seconds; crash = 1000 − distance / 10.
+- Robustness screen: per generation, the 2 fastest clean candidates within 0.3 s of the best screened lap ran the 3-lap
+  race nominally and with 4 fixed ±1 % perturbations; one unclean race failed the candidate (score 900 + lap / 100).
+  37 of 76 screens failed. The fastest clean lap found, 79.404 s (`e9_g036_01`), went 0.66 s off track in the nominal
+  3-lap race, and most candidates under 79.7 s failed the screen: the fast region is narrow.
+- Full gate (`baseline/perturb_test.py`, ±1 %, 20 variants, seed 7, `--fixed steer_lock,max_gear,aim_sign`):
+
+| Candidate | 1 lap | 3 laps | ±1 % clean | Lap 1 mean / worst / best | Result |
+|---|---|---|---|---|---|
+| `e9_g040_05` | **79.556** | 79.556 / 76.242 / 76.036 | **20/20** | 79.796 / 80.064 / 79.524 | accepted |
+| `e9_g036_07` | 79.692 | 79.692 / 76.384 / 76.220 | 18/20 (2 off track) | 79.854 / 80.464 / 79.604 | rejected |
+| `e9_g025_02` | 79.710 | 79.710 / 76.412 / 76.232 | 20/20 | 79.848 / 80.000 / 79.710 | passes, slower |
+
+Accepted: `e9_g040_05`, 79.556 s, damage 0, off track 0 s (re-run alone: same), 0.776 s faster than E8.
+Note the ±1 % lap-1 mean is 79.796 s: 0.24 s above the nominal lap, against 0.003 s for E8. The nominal set sits on the
+fast side of its neighbourhood.
+
+Largest parameter changes against Tuna: `full_band` −18 % (12.3 → 10.1), `slide_thresh` −16 %, `line_dist` −15 %,
+`mix` +15 %, `steer_slow` +14 %, `center_k` +12 %, `brake_gain` −11 %, `mu` +8.5 % (0.451 → 0.490), `brake_steer`
+0.026 → 0.017. Where the 0.71 s (trace distance) come from: the start and first left-hander pair (0–600 m) 0.38 s, then
+0.04–0.13 s in most sections; the last hairpin (3 000–3 300 m) loses 0.12 s. The minimum speed in the two slow corners is
+lower than in E8 (Corkscrew 53.9 vs 60.7 km/h, last hairpin 48.4 vs 58.8 km/h), so the gain comes from the faster
+corners and the straights, not from the slow corners. Files: `results/e9_cmaes.json` (top 10 screened sets),
+`results/e9_cmaes_log.csv` (every run), `results/e9_cmaes_console.txt`, `results/e9_perturb_*.txt`.

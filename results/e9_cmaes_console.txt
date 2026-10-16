@@ -1,0 +1,51 @@
+CMA-ES: n=22, popsize=13, gens=40, sigma=0.015; screen: 3-lap nominal + 4 x +-1 %
+start: 80.332 clean, screen pass (80.332 77.082 76.850)
+gen  1: clean 10/13 gen-best=80.138 screened [#02 80.094 fail@2; #10 80.094 fail@0] best-passed=80.332 fastest=80.094 sigma=0.014 87s
+gen  2: clean 9/13 gen-best=80.506 screened [#08 80.088 fail@3; #01 80.342 fail@3] best-passed=80.332 fastest=80.088 sigma=0.014 162s
+gen  3: clean 10/13 gen-best=80.294 screened [#00 80.294 pass; #08 80.438 pass] best-passed=80.294 fastest=80.088 sigma=0.014 250s
+gen  4: clean 10/13 gen-best=80.204 screened [#09 80.204 pass; #01 80.268 fail@1] best-passed=80.204 fastest=80.088 sigma=0.015 323s
+gen  5: clean 10/13 gen-best=80.18 screened [#02 80.180 pass; #09 80.382 pass] best-passed=80.18 fastest=80.088 sigma=0.015 408s
+gen  6: clean 6/13 gen-best=80.498 screened [] best-passed=80.18 fastest=80.088 sigma=0.015 441s
+gen  7: clean 12/13 gen-best=80.234 screened [#07 80.234 pass; #04 80.456 fail@2] best-passed=80.18 fastest=80.088 sigma=0.015 516s
+gen  8: clean 8/13 gen-best=80.24 screened [#05 80.240 pass; #02 80.378 pass] best-passed=80.18 fastest=80.088 sigma=0.014 601s
+gen  9: clean 8/13 gen-best=80.106 screened [#07 80.106 pass; #00 80.452 fail@2] best-passed=80.106 fastest=80.088 sigma=0.015 675s
+gen 10: clean 9/13 gen-best=80.286 screened [#07 80.124 fail@1; #00 80.286 pass] best-passed=80.106 fastest=80.088 sigma=0.015 745s
+gen 11: clean 7/13 gen-best=80.31 screened [#00 80.310 pass; #11 80.310 pass] best-passed=80.106 fastest=80.088 sigma=0.015 831s
+gen 12: clean 10/13 gen-best=80.144 screened [#02 80.144 pass; #05 80.246 pass] best-passed=80.106 fastest=80.088 sigma=0.015 916s
+gen 13: clean 9/13 gen-best=80.174 screened [#03 80.174 pass; #09 80.206 pass] best-passed=80.106 fastest=80.088 sigma=0.014 1002s
+gen 14: clean 7/13 gen-best=79.86 screened [#00 79.860 pass; #04 80.282 pass] best-passed=79.86 fastest=79.86 sigma=0.014 1087s
+gen 15: clean 11/13 gen-best=80.082 screened [#12 80.082 pass] best-passed=79.86 fastest=79.86 sigma=0.014 1147s
+gen 16: clean 10/13 gen-best=79.978 screened [#10 79.978 pass; #00 80.114 pass] best-passed=79.86 fastest=79.86 sigma=0.013 1233s
+gen 17: clean 10/13 gen-best=79.968 screened [#10 79.756 fail@3; #11 79.968 pass] best-passed=79.86 fastest=79.756 sigma=0.013 1318s
+gen 18: clean 10/13 gen-best=80.084 screened [#11 80.084 pass] best-passed=79.86 fastest=79.756 sigma=0.012 1381s
+gen 19: clean 8/13 gen-best=80.11 screened [#04 79.976 fail@0; #00 80.088 fail@2] best-passed=79.86 fastest=79.756 sigma=0.012 1436s
+gen 20: clean 11/13 gen-best=80.048 screened [#05 79.982 fail@2; #03 80.048 pass] best-passed=79.86 fastest=79.756 sigma=0.012 1516s
+gen 21: clean 10/13 gen-best=79.93 screened [#05 79.930 pass; #07 80.076 fail@0] best-passed=79.86 fastest=79.756 sigma=0.012 1585s
+gen 22: clean 10/13 gen-best=80.07 screened [#12 80.070 pass; #02 80.082 fail@4] best-passed=79.86 fastest=79.756 sigma=0.012 1676s
+gen 23: clean 10/13 gen-best=79.908 screened [#03 79.908 pass; #09 79.922 pass] best-passed=79.86 fastest=79.756 sigma=0.012 1767s
+gen 24: clean 12/13 gen-best=79.954 screened [#10 79.954 pass; #07 79.962 pass] best-passed=79.86 fastest=79.756 sigma=0.011 1858s
+gen 25: clean 10/13 gen-best=79.71 screened [#02 79.710 pass; #10 79.868 pass] best-passed=79.71 fastest=79.71 sigma=0.011 1947s
+gen 26: clean 7/13 gen-best=79.75 screened [#11 79.750 pass; #09 79.856 fail@2] best-passed=79.71 fastest=79.71 sigma=0.011 2030s
+gen 27: clean 6/13 gen-best=80.06 screened [#08 79.918 fail@3; #06 79.990 fail@1] best-passed=79.71 fastest=79.71 sigma=0.011 2099s
+gen 28: clean 13/13 gen-best=79.798 screened [#03 79.798 pass] best-passed=79.71 fastest=79.71 sigma=0.010 2163s
+gen 29: clean 10/13 gen-best=79.934 screened [#03 79.706 fail@3; #09 79.858 fail@4] best-passed=79.71 fastest=79.706 sigma=0.010 2247s
+gen 30: clean 9/13 gen-best=79.788 screened [#03 79.788 pass; #04 79.900 pass] best-passed=79.71 fastest=79.706 sigma=0.010 2333s
+gen 31: clean 7/13 gen-best=79.846 screened [#02 79.698 fail@2; #09 79.774 fail@0] best-passed=79.71 fastest=79.698 sigma=0.010 2388s
+gen 32: clean 9/13 gen-best=79.94 screened [#01 79.782 fail@3; #00 79.866 fail@0] best-passed=79.71 fastest=79.698 sigma=0.010 2448s
+gen 33: clean 10/13 gen-best=79.866 screened [#04 79.756 fail@2; #03 79.866 pass] best-passed=79.71 fastest=79.698 sigma=0.011 2524s
+gen 34: clean 8/13 gen-best=79.874 screened [#08 79.766 fail@3; #10 79.838 fail@1] best-passed=79.71 fastest=79.698 sigma=0.011 2589s
+gen 35: clean 12/13 gen-best=79.802 screened [#01 79.674 fail@0; #03 79.802 pass] best-passed=79.71 fastest=79.674 sigma=0.011 2654s
+gen 36: clean 10/13 gen-best=79.692 screened [#01 79.404 fail@0; #07 79.692 pass] best-passed=79.692 fastest=79.404 sigma=0.011 2718s
+gen 37: clean 8/13 gen-best=79.71 screened [#03 79.624 fail@0; #04 79.676 fail@2] best-passed=79.692 fastest=79.404 sigma=0.011 2773s
+gen 38: clean 9/13 gen-best=79.762 screened [#02 79.626 fail@1; #12 79.762 pass] best-passed=79.692 fastest=79.404 sigma=0.011 2843s
+gen 39: clean 9/13 gen-best=79.732 screened [#10 79.696 fail@2; #05 79.732 pass] best-passed=79.692 fastest=79.404 sigma=0.011 2918s
+gen 40: clean 12/13 gen-best=79.556 screened [#05 79.556 pass; #04 79.620 fail@0] best-passed=79.556 fastest=79.404 sigma=0.011 2983s
+
+=== RESULT ===
+fastest clean 1-lap: 79.404 (e9_g036_01)
+passed screen: 79.556 (e9_g040_05) 3 laps 79.556 76.242 76.036
+passed screen: 79.692 (e9_g036_07) 3 laps 79.692 76.384 76.220
+passed screen: 79.71 (e9_g025_02) 3 laps 79.710 76.412 76.232
+passed screen: 79.732 (e9_g039_05) 3 laps 79.732 76.322 76.214
+passed screen: 79.75 (e9_g026_11) 3 laps 79.750 76.350 76.180
+saved: results/e9_cmaes.json

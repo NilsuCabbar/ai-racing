@@ -1,0 +1,36 @@
+nominal : laps [79.692, 76.384, 76.22] damage 0 off 0 CLEAN
+  v00: laps 79.892 76.428 76.354    damage     0 off     0  clean
+  v01: laps 80.168 76.508 76.256    damage     0 off  0.46  NOT CLEAN
+  v02: laps 79.774 76.148 76.118    damage     0 off     0  clean
+  v03: laps 79.864 76.244 76.348    damage     0 off     0  clean
+  v04: laps 79.810 76.500 76.252    damage     0 off     0  clean
+  v05: laps 79.632 76.114 76.012    damage     0 off     0  clean
+  v06: laps 79.690 76.140 76.142    damage     0 off     0  clean
+  v07: laps 79.904 76.208 76.224    damage     0 off     0  clean
+  v08: laps 79.844 76.146 76.182    damage     0 off     0  clean
+  v09: laps 79.604 76.262 76.166    damage     0 off     0  clean
+  v10: laps 79.704 76.234 76.016    damage     0 off     0  clean
+  v11: laps 79.948 76.248 76.152    damage     0 off  0.54  NOT CLEAN
+  v12: laps 79.916 76.410 76.360    damage     0 off     0  clean
+  v13: laps 79.888 76.216 76.090    damage     0 off     0  clean
+  v14: laps 79.792 76.376 76.150    damage     0 off     0  clean
+  v15: laps 79.704 76.348 76.262    damage     0 off     0  clean
+  v16: laps 79.808 76.290 76.080    damage     0 off     0  clean
+  v17: laps 79.836 76.322 76.068    damage     0 off     0  clean
+  v18: laps 80.464 76.344 76.184    damage     0 off     0  clean
+  v19: laps 79.832 76.330 76.266    damage     0 off     0  clean
+
+=== PERTURB ===
+           tag: E9_e9_g036_07
+             n: 20
+           rel: 0.01
+          seed: 7
+         clean: 18
+       damaged: 0
+     off_track: 2
+    unfinished: 0
+     lap1_mean: 79.854
+    lap1_worst: 80.464
+     lap1_best: 79.604
+  nominal_lap1: 79.692
+ nominal_clean: True
