@@ -181,3 +181,30 @@ Largest parameter changes against Tuna: `full_band` −18 % (12.3 → 10.1), `sl
 lower than in E8 (Corkscrew 53.9 vs 60.7 km/h, last hairpin 48.4 vs 58.8 km/h), so the gain comes from the faster
 corners and the straights, not from the slow corners. Files: `results/e9_cmaes.json` (top 10 screened sets),
 `results/e9_cmaes_log.csv` (every run), `results/e9_cmaes_console.txt`, `results/e9_perturb_*.txt`.
+
+| 2026-10-16 | E10 track map, step 1: geometry | `mapped/track.py` rebuilds the Corkscrew centreline from `torch/torcs/tracks/road/corkscrew/corkscrew.xml`; no driving change | – | – | – | – | – | – |
+
+Notes on E10: the organizers' rules on track maps are still being confirmed (user, 2026-10-16); E9 (79.556 s, sensors
+only) stays the fallback. `mapped/` starts as a copy of `fast/` (driver and `params.json` unchanged so far). Our own code,
+no other team's code or data.
+
+- The main track has 66 segments (37 straight, 29 turns, 20 of them with an `end radius`), width 12 m everywhere, so
+  trackPos ±1 = ±6 m. Tightest radius 11.5 m (`s35-2`, the Corkscrew).
+- Straights and constant arcs are exact. Turns with an `end radius` were the only problem: taking the length as
+  arc × (r0 + r1) / 2 gives 3649.86 m and leaves the track open by 29 m. The rule that fits: split the turn into
+  int(arc × (r0 + r1) / 2 / step length) + 1 steps of equal length (step length = the segment's
+  `profil steps length`, else the track's 8 m), radii linear from r0 to r1, and scale the length so the steps turn
+  exactly `arc`. That gives **3608.45 m**, and the end of the lap closes on the start within 0.01 m and 360.000°.
+  TORCS's own lap: distFromStart wraps at 3608.3 → 0.1 (trace, 0.1 m rounding).
+- Check against a real lap (`results/e10_trace_e9_beams.csv`, the E9 driver, every step with the 19 beams;
+  `baseline/run_lap.py` got `--trace-file`, `--trace-every`, `--trace-beams`). Each trace row is placed on the map at
+  distFromStart / trackPos / angle and the beams are cast against the map's edges (`mapped/verify_geometry.py`,
+  `results/e10_verify_geometry.txt`, 776 rows):
+  - median |error| over all beams that hit an edge: **0.025 m**; the ±45° beams (edge 4–9 m away): median 0.003 m,
+    99th percentile 0.025 m, max 0.27 m; the long straight-ahead beams: median 0.04 m, 95th percentile ≤ 0.72 m
+    (at 100–200 m range, 0.001 rad of rounded `angle` is already 0.1–0.2 m).
+  - every 300 m section has a median under 0.07 m, so no segment is misplaced.
+  - shifting distFromStart by ±0.5 / ±1 / ±2 m raises the median error to 0.13 / 0.23 / 0.39 m: the start line is the
+    start of `s1`, and the map lines up with distFromStart to well under 0.5 m.
+- Beam convention confirmed: angle = track heading − car heading, negative beam angles point left, beams measure to
+  the main-track edge (±6 m), not to the borders or curbs.

@@ -42,6 +42,9 @@ ap.add_argument("--udp-timeout-us", type=int, default=1000000,
 ap.add_argument("--max-sim-s", type=float, default=300.0, help="simulated-time limit")
 ap.add_argument("--wall-timeout", type=float, default=600.0, help="kill everything after this many real seconds")
 ap.add_argument("--trace", action="store_true", help="write baseline/trace.csv every 5 steps")
+ap.add_argument("--trace-file", default=os.path.join(HERE, "trace.csv"))
+ap.add_argument("--trace-every", type=int, default=5, help="trace every N control steps")
+ap.add_argument("--trace-beams", action="store_true", help="also trace speedY, z and the 19 track beams")
 ap.add_argument("--tag", default="")
 ap.add_argument("--out", default=os.path.join(HERE, "runs.csv"))
 ap.add_argument("--robust", type=int, default=0, metavar="N",
@@ -189,11 +192,12 @@ late_steps = 0
 wall0 = time.time()
 C = drv.Client(p=args.port)
 
-trace_f = open(os.path.join(HERE, "trace.csv"), "w", newline="", encoding="utf-8") if args.trace else None
+trace_f = open(args.trace_file, "w", newline="", encoding="utf-8") if args.trace else None
 trace_w = csv.writer(trace_f) if trace_f else None
 if trace_w:
     trace_w.writerow(["step", "curLapTime", "distFromStart", "distRaced", "speedX", "trackPos", "angle",
-                      "rpm", "steer", "accel", "brake", "gear", "damage"])
+                      "rpm", "steer", "accel", "brake", "gear", "damage"]
+                     + (["speedY", "z"] + [f"track{i}" for i in range(19)] if args.trace_beams else []))
 
 timing_f = open(args.timing_log, "w", newline="", encoding="utf-8") if args.timing_log else None
 timing_w = csv.writer(timing_f) if timing_f else None
@@ -265,11 +269,13 @@ for steps in range(1, int(args.max_sim_s / STEP_DT) + 1):
     if args.stop_on_damage and max_damage > 0:
         status = "damaged"
         break
-    if trace_w and steps % 5 == 0:
+    if trace_w and steps % args.trace_every == 0:
         R = C.R.d
         trace_w.writerow([steps, round(cur_lap, 2), round(S["distFromStart"], 1), round(dist_raced, 1),
                           round(S["speedX"], 1), round(S["trackPos"], 3), round(S["angle"], 3), round(S["rpm"]),
-                          round(R["steer"], 3), round(R["accel"], 3), round(R["brake"], 3), R["gear"], S["damage"]])
+                          round(R["steer"], 3), round(R["accel"], 3), round(R["brake"], 3), R["gear"], S["damage"]]
+                         + ([round(S.get("speedY", 0), 2), round(S.get("z", 0), 3)] + [round(x, 2) for x in S["track"]]
+                            if args.trace_beams else []))
 wall_s = time.time() - wall0
 if trace_f:
     trace_f.close()
