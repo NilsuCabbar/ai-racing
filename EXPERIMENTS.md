@@ -582,3 +582,29 @@ lock**; the car spins and leaves the track at 3289 m. Single laps (E17b tables):
 The brake limit alone does not stop the spin; limiting the throttle on the exit does. `exit_steer` 0.6 / `exit_k` 2 is
 the only setting that keeps grip 0.95 clean with margin; it costs 0.27 s at grip 0.90. On its own it is not an
 improvement (rejected at 0.90); it is kept for the ladder in E21, whose result decides whether it stays.
+
+| 2026-10-16 | E21 map: grip ladder with the exit guard | E17b crest tables, grip 0.90 → 0.95 → 1.00, with E20's guard (`exit_steer` 0.6, `exit_k` 2); stop at the first failure | 76.906 (grip 0.95, last passing step) | 0 | – | – | – | – |
+
+Notes on E21 (`mapped/gate.py --params '{"exit_steer": 0.6, "exit_k": 2.0}'`, tables `build_table.py --mu 2.596 --crest
+--grip g`):
+
+| Grip | Model lap | 1 lap | 3 laps | ±1 % | Result |
+|---|---|---|---|---|---|
+| 0.90 | 74.36 | 76.872 | 76.872 / 73.174 / 73.126 clean | 20/20 (lap 1 mean 76.875) | passed |
+| 0.95 | 73.23 | **76.906** | 76.906 / 73.294 / 73.220 clean | **20/20** (lap 1 mean 77.169) | passed: last step |
+| 1.00 | 72.21 | 77.978, **0.6 s off track** at 3290–3300 m (#13 exit, 57 km/h) | – | – | failed |
+
+The ladder keeps grip 0.95, but its lap (76.906 s) is 0.31 s slower than E17b (grip 0.90, no guard, 76.598 s), so the best
+does not change. Section times (s) show why more grip does not pay:
+
+| Grip | 0–600 | 600–1200 | 1200–1800 | 1800–2400 | 2400–3000 | 3000–3600 |
+|---|---|---|---|---|---|---|
+| 0.90 | 13.79 | 12.23 | 10.61 | 10.84 | 14.30 | 12.78 |
+| 0.95 | 13.79 | 12.10 | 10.58 | 10.78 | 14.44 | 12.91 |
+| 1.00 | 13.75 | 11.98 | 10.51 | 10.74 | 14.48 | 14.18 |
+
+From 600 to 2400 m each 0.05 of grip is worth 0.1–0.25 s, as the model says. The Corkscrew (2400–3000 m) and #13
+(3000–3600 m) get slower instead, and at 1.00 #13 leaves the track. These two places, not the rest of the lap, now set
+the limit: the model's corner speed there is more than the car can use (crest + traction at the exits). A local grip
+factor for these two stretches (`build_table.py --local`) would let the rest of the lap run at a higher grip. Not
+tried yet; it needs your go-ahead, because the earlier rule allowed a local margin for #10 only.

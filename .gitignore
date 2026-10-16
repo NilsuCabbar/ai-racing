@@ -14,5 +14,6 @@ runs_pre_timing.csv
 perturb.csv
 perturb_*.txt
 trace_last.csv
-trace_e1*.csv
-mapped/table_e1*.csv
+trace_e*.csv
+mapped/table_e*.csv
+mapped/_params_*.json
