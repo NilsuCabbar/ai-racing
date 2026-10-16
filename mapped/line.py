@@ -86,16 +86,17 @@ def path(t, l):
 
 
 def speed_profile(k, ds, mu=1.3, brake_g=2.0, v_top=320.0):
-    """Point-mass speeds (m/s) along an open sequence of samples that starts at rest.
+    """Point-mass speeds (m/s) along an open sequence of samples that starts at rest. mu: scalar or per sample.
     k[i]: curvature at sample i, ds[i]: distance from sample i to i+1. Grip is a friction circle: what cornering
     uses is not available for accelerating or braking."""
     acc_v = np.array(ACC_TABLE_KMH) / 3.6
     acc_a = np.array(ACC_TABLE)
+    mu = np.broadcast_to(np.asarray(mu, dtype=float), np.shape(k))  # scalar, or one value per sample
     v = np.minimum(np.sqrt(mu * G / np.maximum(np.abs(k), 1e-9)), v_top / 3.6)
     m = len(k)
 
     def left(i):  # share of grip left after cornering
-        lat = v[i] ** 2 * abs(k[i]) / (mu * G)
+        lat = v[i] ** 2 * abs(k[i]) / (mu[i] * G)
         return math.sqrt(max(0.0, 1.0 - min(1.0, lat) ** 2))
 
     def forward():

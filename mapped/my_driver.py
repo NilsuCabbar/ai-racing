@@ -20,7 +20,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TABLE = os.path.join(HERE, "table.csv")
 
 DEFAULTS = {
-    "scale": 0.85,          # share of the table speed
+    "scale": 1.0,           # share of the table speed (the grip scale is in the table, see build_table.py)
     "look_t": 0.35,         # s, pure-pursuit look-ahead time
     "look_min": 6.0,        # m, shortest look-ahead
     "steer_gain": 1.0,      # multiplies the pure-pursuit wheel angle

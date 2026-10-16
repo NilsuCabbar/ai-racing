@@ -1,5 +1,5 @@
 {
-  "scale": 0.85,
+  "scale": 1.0,
   "look_t": 0.35,
   "look_min": 6.0,
   "steer_gain": 1.0,

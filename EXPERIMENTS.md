@@ -326,3 +326,36 @@ mu ≥ 1.9 everywhere and the model's corner speeds are followed within 3–4 %.
 right-hand part of the Corkscrew)** slides 8.7–12.8 km/h at 1.79 g, so the grip there is lower (the car goes light over
 the drop). mu stays 2.70 for now; the limit will come from raising the grip scale step by step. #10 will likely need a
 local grip factor.
+
+| 2026-10-16 | E13 map: grip scale instead of speed scale | table built with mu and braking × 0.85 (`build_table.py --grip 0.85`), driver `scale` 1.0: straights at full throttle | **82.598** | 0 | – | – | – | – |
+
+Notes on E13: same driver and line as E12, only the meaning of the scale changes. `mapped/build_table.py --grip g`
+multiplies mu (2.70) and the braking (3.0 g) by g; acceleration and top speed are not scaled. Corner speeds are
+√0.85 = 92 % of the full model (E12: 85 %), straights are not capped. Model lap for this table: 78.90 s.
+`mapped/gate.py` runs the acceptance gate (1 lap with a full trace, then `perturb_test.py`: 3-lap race + 20 × ±1 %;
+not perturbed: `max_gear`, `ctrl`).
+
+- 1 lap **82.598 s**, damage 0, off track 0 s (E12: 88.374 s); 3 laps clean; ±1 %: **20/20** clean, lap 1 mean / worst /
+  best 82.570 / 83.026 / 82.250 (`results/e13_g085_gate.txt`). Full throttle 26.2 s of the lap (E12: 5.0 s).
+- Max |trackPos| 0.922 at 3304 m (exit of the last hairpin), line error median 0.28 m, 95th 1.46 m, max 2.29 m (3293 m).
+  Speed − target: median −5.8 km/h; the car follows the profile late.
+- #10 (right-hand part of the Corkscrew) slides up to 25.5 km/h sideways; all other corners 2–8 km/h.
+- Real vs model: every corner is 0.08–0.33 s slower than the model (sum 2.3 s); the rest of the 3.7 s gap is the start
+  and the exits. Still 3.04 s slower than E9, mainly #2, #6 and #8 (+0.75…+0.77 s each): the model brakes early at
+  0.85 × 3 g, while E9 brakes later.
+
+| # | corner (m) | stretch (m) | min speed real / target (km/h) | real lat g (max) | max slip (km/h) | time real / model (s) | real - model | ref (E9) time / real - ref |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 185-221 L | 125-281 | 222 / 285 | 2.69 | 2.7 | 2.57 / 2.46 | +0.11 | 2.84 / -0.27 |
+| 2 | 407-540 L | 347-564 | 99 / 101 | 3.48 | 5.3 | 7.02 / 6.72 | +0.30 | 6.24 / +0.77 |
+| 3 | 589-638 R | 564-685 | 172 / 176 | 1.49 | 2.4 | 2.55 / 2.44 | +0.10 | 2.24 / +0.31 |
+| 4 | 733-806 R | 685-866 | 123 / 125 | 3.09 | 5.7 | 4.76 / 4.62 | +0.14 | 4.61 / +0.16 |
+| 5 | 995-1074 R | 935-1134 | 151 / 154 | 3.45 | 4.9 | 4.40 / 4.18 | +0.22 | 4.30 / +0.10 |
+| 6 | 1477-1612 L | 1417-1672 | 125 / 128 | 2.18 | 3.9 | 6.36 / 6.11 | +0.24 | 5.60 / +0.76 |
+| 7 | 1918-1949 L | 1858-2009 | 152 / 159 | 4.19 | 3.0 | 3.43 / 3.18 | +0.25 | 3.58 / -0.15 |
+| 8 | 2351-2378 R | 2291-2405 | 147 / 152 | 1.89 | 2.0 | 2.60 / 2.50 | +0.09 | 1.85 / +0.75 |
+| 9 | 2432-2469 L | 2405-2476 | 86 / 87 | 4.50 | 2.8 | 2.79 / 2.71 | +0.08 | 3.04 / -0.25 |
+| 10 | 2484-2597 R | 2476-2597 | 97 / 104 | 3.09 | 25.5 | 3.37 / 3.24 | +0.13 | 4.03 / -0.66 |
+| 11 | 2598-2784 L | 2597-2844 | 140 / 143 | 2.51 | 3.9 | 5.59 / 5.46 | +0.13 | 5.38 / +0.21 |
+| 12 | 2943-3020 R | 2883-3080 | 140 / 142 | 2.99 | 3.4 | 4.72 / 4.50 | +0.22 | 4.38 / +0.34 |
+| 13 | 3250-3286 L | 3190-3346 | 83 / 84 | 3.12 | 8.0 | 5.60 / 5.27 | +0.33 | 5.59 / +0.01 |
