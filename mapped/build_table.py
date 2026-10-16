@@ -46,16 +46,16 @@ def grip_factor(t, local):
     return g
 
 
-def build(tp, mu, brake_g, out_path, grip=1.0, local=(), crest=False):
+def build(tp, mu, brake_g, out_path, grip=1.0, local=(), crest=False, narrow=()):
     t = Track()
-    l = L.racing_line(t, tp)
+    l = L.racing_line(t, tp, local=[tuple(float(x) for x in n.split(":")) for n in narrow])
     x, y, ds, k = L.path(t, l)
     gf = grip_factor(t, local)
     kc = t.crest if crest else None
     v = flying_profile(t, k, ds, mu * grip * gf, brake_g * grip, kc)
     with open(out_path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow([f"# tp_max={tp} mu={mu} brake_g={brake_g} grip={grip} local={','.join(local) or '-'} crest={int(crest)} "
+        w.writerow([f"# tp_max={tp} mu={mu} brake_g={brake_g} grip={grip} local={','.join(local) or '-'} crest={int(crest)} narrow={','.join(narrow) or '-'} "
                     f"length={t.length:.4f} ds={t.ds:.6f}"])
         w.writerow(["s", "offset", "lx", "ly", "cx", "cy", "yaw", "k", "v"])
         for i in range(len(t.s)):
@@ -78,10 +78,12 @@ if __name__ == "__main__":
     ap.add_argument("--grip", type=float, default=1.0, help="scales mu and brake_g, not acceleration")
     ap.add_argument("--local", action="append", default=[], metavar="A:B:F", help="extra grip factor F on [A, B] m")
     ap.add_argument("--crest", action="store_true", help="lower grip, braking and traction on crests (E17)")
+    ap.add_argument("--narrow", action="append", default=[], metavar="A:B:TP",
+                    help="narrower |trackPos| limit TP for the line on [A, B] m (E18)")
     ap.add_argument("--out", default=os.path.join(HERE, "table.csv"))
     a = ap.parse_args()
-    lap, v = build(a.tp, a.mu, a.brake_g, a.out, a.grip, a.local, a.crest)
+    lap, v = build(a.tp, a.mu, a.brake_g, a.out, a.grip, a.local, a.crest, a.narrow)
     print(f"table {a.out}: tp_max {a.tp}, mu {a.mu}, brake {a.brake_g} g, grip x{a.grip}, local {a.local}, "
-          f"crest {a.crest}; "
+          f"crest {a.crest}, narrow {a.narrow}; "
           f"model standing lap {lap:.2f} s; "
           f"speed {v.min() * 3.6:.0f}-{v.max() * 3.6:.0f} km/h")

@@ -531,3 +531,13 @@ Notes on E17 (`mapped/track.py`, `mapped/line.py`, `mapped/build_table.py --cres
 | 11 | 2598-2784 L | 2597-2844 | 140 / 140 | 4.78 | 7.7 | 5.23 / 5.22 | +0.02 | 5.38 / -0.15 |
 | 12 | 2943-3020 R | 2883-3080 | 143 / 143 | 3.37 | 5.5 | 4.16 / 4.06 | +0.10 | 4.38 / -0.22 |
 | 13 | 3250-3286 L | 3190-3346 | 84 / 85 | 3.42 | 22.8 | 4.97 / 4.53 | +0.45 | 5.59 / -0.62 |
+
+| 2026-10-16 | E18 map: steering lock and local narrow line | check of the wheel angle the line needs; line limit 0.6 only on 2405–2597 m (`build_table.py --narrow`) | 76.868 | 0 | – | – | – | – |
+
+Notes on E18: (1) the kinematic wheel angle the 0.75 line needs, atan(2.95 m × k), is at most **6.9°** (3269 m, #13)
+and 6.4° in #9–#10, against a 21° lock. The line is drivable at any speed as far as steering geometry goes; full
+lock only appears when the front slides and the controller asks for more. In E17b that is 10 steps in #9–#10 and 45 steps at
+3266–3290 m (#13, slip up to 18 km/h). (2) The line was rebuilt with |trackPos| ≤ 0.6 on 2405–2597 m (blended over 30 m,
+`line.local_limit`), same grip 0.90 and crest model: model lap 74.50 s (+0.14), real 1 lap **76.868 s** (+0.27 s
+against E17b), clean. Through 2405–2597 m: 6.14 s vs 5.76 s, full lock 31 vs 10 steps, max slip 19.1 vs 17.7 km/h.
+A tighter line there makes the crest worse. Rejected; the 0.75 line stays. The narrowing option stays in the code.

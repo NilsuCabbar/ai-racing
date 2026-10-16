@@ -59,17 +59,27 @@ def _relax(cx, cy, nx, ny, l, lim, iters, relax=0.5):
     return l
 
 
-def racing_line(t, tp_max=0.75, iters=(400, 400, 400, 600, 800, 1200)):
-    """Offset l (m, left +) per centreline sample with |l| <= tp_max * half width."""
-    lim = tp_max * t.half
+def local_limit(t, tp_max, local=()):
+    """Per-sample |trackPos| limit: tp_max, narrowed to tp on [a, b] for each (a, b, tp), blended over 30 m."""
+    lim = np.full(len(t.s), float(tp_max))
+    for a, b, tp in local:
+        d = np.maximum(a - t.s, t.s - b)
+        w = np.clip(1.0 - d / 30.0, 0.0, 1.0)
+        lim = np.minimum(lim, tp_max - w * (tp_max - tp))
+    return lim
+
+
+def racing_line(t, tp_max=0.75, iters=(400, 400, 400, 600, 800, 1200), local=()):
+    """Offset l (m, left +) per centreline sample with |l| <= tp_max * half width (narrower where `local` says)."""
+    lim_all = local_limit(t, tp_max, local) * t.half
     nx_all, ny_all = -np.sin(t.yaw), np.cos(t.yaw)
     n = len(t.s)
     l_full = np.zeros(n)
     strides = [32, 16, 8, 4, 2, 1]
     for stride, it in zip(strides, iters):
         idx = np.arange(0, n, stride)
-        l = l_full[idx]
-        l = _relax(t.x[idx], t.y[idx], nx_all[idx], ny_all[idx], l, lim, it)
+        l = np.clip(l_full[idx], -lim_all[idx], lim_all[idx])
+        l = _relax(t.x[idx], t.y[idx], nx_all[idx], ny_all[idx], l, lim_all[idx], it)
         # back to full resolution (periodic linear interpolation)
         l_full = np.interp(np.arange(n), np.append(idx, n), np.append(l, l[0]))
     return l_full
