@@ -13,3 +13,4 @@ timing_*.csv
 runs_pre_timing.csv
 perturb.csv
 perturb_*.txt
+trace_last.csv

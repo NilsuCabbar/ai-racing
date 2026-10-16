@@ -272,3 +272,57 @@ Corner stretches sum to +3.91 s, the straights to the remaining 1.22 s. Where th
 
 Line tables (distFromStart → trackPos, offset, curvature, radius, model speed): `mapped/line_tp060.csv`,
 `mapped/line_tp075.csv`, `mapped/line_tp090.csv`.
+
+| 2026-10-16 | E12 track map, steps 3–4: first map drive | `mapped/my_driver.py` follows `mapped/table.csv` (0.75 line, mu 2.70, 3 g) at `scale` 0.85 | 88.374 | 0 | – | – | – | – |
+
+Notes on E12: first lap with the map driver. Slower than E9 on purpose (85 % of the profile); the aim was a clean lap.
+- **Table** (`mapped/build_table.py`): per metre the line offset, line point, centreline point and heading, line
+  curvature and the flying-lap model speed (three laps unrolled from rest, the middle one kept, so there is no
+  standing-start dip; the car just accelerates at the start).
+- **Driver** (`mapped/my_driver.py`, all new; ABS, traction control and rpm gears copied from E9): the car is placed on
+  the map from distFromStart / trackPos / angle. Steering is pure pursuit towards the line point
+  max(6 m, 0.35 s × v) ahead, wheel angle atan(2 L sin α / d) with car1-ow1's wheelbase 2.95 m and steer lock 21°.
+  Target speed = scale × table speed 0.15 s ahead; full throttle below target − 8 km/h, proportional above,
+  brake 0.08 per km/h over target. Safety from the sensors: a speed cap from the free distance ahead
+  (35 m/s², 4 m margin, floor 60 km/h) and no throttle at |trackPos| > 0.97 while moving outwards.
+- **Result** (`baseline/run_lap.py`): 1 lap **88.374 s**, damage 0, off track 0 s; max |trackPos| 0.82 (at 2543 m,
+  Corkscrew). 3 laps 88.374 / 85.198 / 85.192, clean. ±1 %, 20 variants: **20/20 clean**, lap 1 mean / worst / best
+  88.352 / 88.998 / 87.816 (`results/e12_perturb_map085.txt`).
+- **Line following**: median |error| 0.21 m, 95th percentile 0.72 m, max 1.08 m (1074 m, exit of #5).
+  Speed − target: median −2.4 km/h, 5th percentile −25.6 km/h (start and corner exits).
+- **Model vs real lap**: the model following exactly 0.85 × the table: 86.26 s; real 88.37 s, so 2.1 s are lost to
+  following the target late (proportional throttle band, look-ahead). The model at full table speed: 74.39 s.
+  Scaling the whole profile also caps the straights at 85 % (top speed 230.5 km/h vs 262 for E9; full throttle only
+  5.0 s of the lap). For the next steps the scale should act on grip and braking (mu, brake_g) only, so that the
+  straights stay at full throttle.
+
+Per corner (`mapped/analyze_run.py`, `results/e12_analysis.txt`). Model = point mass on the same line with mu and
+braking × 0.85² (what 85 % of the corner speed means); E9 = the E9 lap through the same stretch:
+
+| # | corner (m) | stretch (m) | min speed real / target (km/h) | real lat g (max) | max slip (km/h) | time real / model (s) | real - model | ref (E9) time / real - ref |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 185-221 L | 125-281 | 222 / 243 | 2.69 | 2.7 | 2.57 / 2.47 | +0.10 | 2.84 / -0.27 |
+| 2 | 407-540 L | 347-564 | 91 / 93 | 3.15 | 1.8 | 7.50 / 7.28 | +0.23 | 6.24 / +1.26 |
+| 3 | 589-638 R | 564-685 | 153 / 155 | 1.11 | 1.4 | 2.75 / 2.68 | +0.07 | 2.24 / +0.51 |
+| 4 | 733-806 R | 685-866 | 113 / 115 | 2.42 | 2.6 | 5.14 / 4.99 | +0.15 | 4.61 / +0.53 |
+| 5 | 995-1074 R | 935-1134 | 140 / 142 | 2.96 | 2.9 | 4.66 / 4.53 | +0.13 | 4.30 / +0.36 |
+| 6 | 1477-1612 L | 1417-1672 | 116 / 118 | 1.86 | 2.1 | 6.82 / 6.59 | +0.24 | 5.60 / +1.23 |
+| 7 | 1918-1949 L | 1858-2009 | 144 / 147 | 3.61 | 2.1 | 3.60 / 3.44 | +0.16 | 3.58 / +0.02 |
+| 8 | 2351-2378 R | 2291-2405 | 138 / 142 | 1.94 | 1.8 | 2.67 / 2.81 | -0.14 | 1.85 / +0.82 |
+| 9 | 2432-2469 L | 2405-2476 | 79 / 81 | 3.86 | 1.3 | 3.00 / 2.94 | +0.07 | 3.04 / -0.03 |
+| 10 | 2484-2597 R | 2476-2597 | 92 / 96 | 2.94 | 12.8 | 3.63 / 3.45 | +0.18 | 4.03 / -0.40 |
+| 11 | 2598-2784 L | 2597-2844 | 130 / 132 | 2.31 | 2.5 | 6.06 / 5.90 | +0.16 | 5.38 / +0.67 |
+| 12 | 2943-3020 R | 2883-3080 | 129 / 131 | 2.55 | 2.2 | 4.99 / 4.87 | +0.12 | 4.38 / +0.61 |
+| 13 | 3250-3286 L | 3190-3346 | 76 / 78 | 2.75 | 1.9 | 5.89 / 5.68 | +0.21 | 5.59 / +0.30 |
+
+Real is 0.07–0.24 s slower than the model in every corner except #8 (−0.14 s, where the model brakes early for the
+Corkscrew). Against E9 the map lap is already faster in #1, #9 and #10 (the Corkscrew: −0.43 s), although it runs 15 %
+below the profile; it loses mostly where the 0.85 cap holds it back on the following straight (#2, #6, #8).
+
+**mu recalibration.** Measured on the line's curvature at the real speed, the car holds 1.81–1.90 g in all slow and
+medium corners (#2, #4–#7, #9, #11–#13, 76–144 km/h) with only 0–3 km/h of sideways slip. The model asked for
+0.85² × 2.70 = 1.95 g. So nothing was at the limit, and this lap cannot raise or lower the global mu; it shows
+mu ≥ 1.9 everywhere and the model's corner speeds are followed within 3–4 %. One exception: **#10 (2484–2597 m, the
+right-hand part of the Corkscrew)** slides 8.7–12.8 km/h at 1.79 g, so the grip there is lower (the car goes light over
+the drop). mu stays 2.70 for now; the limit will come from raising the grip scale step by step. #10 will likely need a
+local grip factor.
