@@ -359,3 +359,42 @@ not perturbed: `max_gear`, `ctrl`).
 | 11 | 2598-2784 L | 2597-2844 | 140 / 143 | 2.51 | 3.9 | 5.59 / 5.46 | +0.13 | 5.38 / +0.21 |
 | 12 | 2943-3020 R | 2883-3080 | 140 / 142 | 2.99 | 3.4 | 4.72 / 4.50 | +0.22 | 4.38 / +0.34 |
 | 13 | 3250-3286 L | 3190-3346 | 83 / 84 | 3.12 | 8.0 | 5.60 / 5.27 | +0.33 | 5.59 / +0.01 |
+
+| 2026-10-16 | E14 map: curvature feedforward steering | `ctrl` 1: wheel = atan(L · k(s + 0.1 s · v)) + pure-pursuit correction on the deviation only; look-ahead 0.15 s | **82.024** | 0 | – | – | – | – |
+
+Notes on E14: same table as E13 (0.75 line, grip 0.85). New steering mode in `mapped/my_driver.py` (`ctrl` 1; `ctrl` 0
+keeps pure pursuit): feedforward wheel angle atan(wheelbase × line curvature `ff_lead` s ahead) × `ff_gain`, plus
+pure pursuit towards the line point `look_t` s ahead with the line's own bend removed from the angle
+(α − asin(k·d/2)), so the curvature is not counted twice. Screening, single laps (all clean):
+
+| Steering | look_t 0.35 | 0.25 | 0.2 | 0.15 |
+|---|---|---|---|---|
+| pure pursuit (`ctrl` 0) | 82.598 (E13) | – | 82.220 | 82.172 |
+| feedforward + correction (`ctrl` 1, ff_lead 0.1) | 82.502 | 82.324 | 82.082 | **82.024** |
+| `ctrl` 1, other ff_lead | – | 82.124 (0.05) | 82.194 (0.0) | – |
+| `ctrl` 1, look_t 0.5 | 83.752 | | | |
+
+So the shorter look-ahead brings ~0.4 s and the feedforward another ~0.15 s.
+
+- Gate (`results/e14_ff_gate.txt`): 1 lap **82.024 s**, damage 0, off track 0 s; 3 laps clean; ±1 %: **20/20**.
+- Line following: median |error| **0.09 m** (E13 0.28), 95th 0.60 m (1.46), max 1.72 m at 3288 m (2.29);
+  max |trackPos| **0.794** (0.922). The steering lag is mostly gone.
+- The lap time hardly moved, because the remaining gap to the model (3.1 s) is speed following: speed − target median
+  −5.4 km/h. The table accelerates exactly as fast as the car can (measured full-throttle table), so once the car falls
+  behind it never catches up, and the 8 km/h proportional band opens the throttle late. Next: E15 on speed following.
+
+| # | corner (m) | stretch (m) | min speed real / target (km/h) | real lat g (max) | max slip (km/h) | time real / model (s) | real - model | ref (E9) time / real - ref |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 185-221 L | 125-281 | 222 / 285 | 2.86 | 2.6 | 2.54 / 2.46 | +0.08 | 2.84 / -0.30 |
+| 2 | 407-540 L | 347-564 | 98 / 101 | 3.57 | 4.9 | 6.94 / 6.72 | +0.22 | 6.24 / +0.70 |
+| 3 | 589-638 R | 564-685 | 174 / 176 | 1.48 | 2.3 | 2.52 / 2.44 | +0.08 | 2.24 / +0.29 |
+| 4 | 733-806 R | 685-866 | 123 / 125 | 2.86 | 6.6 | 4.72 / 4.62 | +0.10 | 4.61 / +0.11 |
+| 5 | 995-1074 R | 935-1134 | 151 / 154 | 3.37 | 4.6 | 4.37 / 4.18 | +0.19 | 4.30 / +0.07 |
+| 6 | 1477-1612 L | 1417-1672 | 125 / 128 | 2.19 | 3.9 | 6.29 / 6.11 | +0.18 | 5.60 / +0.70 |
+| 7 | 1918-1949 L | 1858-2009 | 156 / 159 | 4.35 | 3.1 | 3.38 / 3.18 | +0.20 | 3.58 / -0.20 |
+| 8 | 2351-2378 R | 2291-2405 | 147 / 152 | 1.88 | 2.8 | 2.60 / 2.50 | +0.09 | 1.85 / +0.75 |
+| 9 | 2432-2469 L | 2405-2476 | 86 / 87 | 4.66 | 3.0 | 2.78 / 2.71 | +0.07 | 3.04 / -0.25 |
+| 10 | 2484-2597 R | 2476-2597 | 98 / 104 | 3.67 | 21.3 | 3.37 / 3.24 | +0.12 | 4.03 / -0.67 |
+| 11 | 2598-2784 L | 2597-2844 | 140 / 143 | 2.63 | 4.0 | 5.55 / 5.46 | +0.09 | 5.38 / +0.17 |
+| 12 | 2943-3020 R | 2883-3080 | 140 / 142 | 3.07 | 3.6 | 4.66 / 4.50 | +0.16 | 4.38 / +0.28 |
+| 13 | 3250-3286 L | 3190-3346 | 82 / 84 | 3.12 | 11.5 | 5.60 / 5.27 | +0.33 | 5.59 / +0.01 |

@@ -2,8 +2,11 @@
 
 Standard library only. The table comes from mapped/build_table.py (track XML -> centreline -> racing line ->
 point-mass speeds). Per control step:
-  - steering: pure pursuit. The car is placed on the map from distFromStart, trackPos and angle; it steers towards
-    the line point `look_t` seconds ahead (at least `look_min` m) with wheel angle atan(2 L sin(alpha) / d).
+  - steering (ctrl 0): pure pursuit. The car is placed on the map from distFromStart, trackPos and angle; it steers
+    towards the line point `look_t` seconds ahead (at least `look_min` m) with wheel angle atan(2 L sin(alpha) / d).
+  - steering (ctrl 1): feedforward from the line's curvature `ff_lead` seconds ahead, atan(L * k) * ff_gain, plus a
+    pure-pursuit correction that only acts on the deviation: alpha minus the angle the target point would have if the
+    car were on the line (k * d / 2), so the curvature is not counted twice.
   - speed: target = scale * table speed `lead_t` seconds ahead; full throttle below target - full_band,
     proportional inside the band, brake (speed - target) * brake_gain above it.
   - safety from the live sensors: a speed cap from the free distance straight ahead (safe_decel, safe_margin,
@@ -23,7 +26,10 @@ DEFAULTS = {
     "scale": 1.0,           # share of the table speed (the grip scale is in the table, see build_table.py)
     "look_t": 0.35,         # s, pure-pursuit look-ahead time
     "look_min": 6.0,        # m, shortest look-ahead
-    "steer_gain": 1.0,      # multiplies the pure-pursuit wheel angle
+    "steer_gain": 1.0,      # multiplies the pure-pursuit wheel angle (ctrl 0) / the correction (ctrl 1)
+    "ctrl": 0,              # 0 = pure pursuit, 1 = curvature feedforward + pure-pursuit correction
+    "ff_gain": 1.0,         # ctrl 1: share of the feedforward wheel angle
+    "ff_lead": 0.1,         # s, ctrl 1: the curvature is read this far ahead (steering lag)
     "lead_t": 0.15,         # s, the target speed is read this far ahead
     "full_band": 8.0,       # km/h
     "brake_gain": 0.08,     # brake per km/h above target
@@ -113,7 +119,14 @@ def drive(c, p=None):
     alpha = math.atan2(dy, dx) - car_yaw
     alpha = (alpha + math.pi) % (2 * math.pi) - math.pi
     dist = max(1.0, math.hypot(dx, dy))
-    wheel = math.atan(2.0 * WHEELBASE * math.sin(alpha) / dist) * prm["steer_gain"]
+    if prm["ctrl"] >= 0.5:
+        k_mid = _interp("k", s + 0.5 * look)            # the line's curvature between here and the target point
+        corr = alpha - math.asin(_clip(k_mid * dist / 2.0, -1.0, 1.0))
+        k_ff = _interp("k", s + v * prm["ff_lead"])
+        wheel = (prm["ff_gain"] * math.atan(WHEELBASE * k_ff)
+                 + prm["steer_gain"] * math.atan(2.0 * WHEELBASE * math.sin(corr) / dist))
+    else:
+        wheel = math.atan(2.0 * WHEELBASE * math.sin(alpha) / dist) * prm["steer_gain"]
     R["steer"] = _clip(wheel / STEER_LOCK, -1.0, 1.0)
 
     # --- target speed from the table, with a sensor safety cap ---

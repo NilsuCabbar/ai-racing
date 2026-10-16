@@ -1,6 +1,6 @@
 {
   "scale": 1.0,
-  "look_t": 0.35,
+  "look_t": 0.15,
   "look_min": 6.0,
   "steer_gain": 1.0,
   "lead_t": 0.15,
@@ -16,5 +16,8 @@
   "tc_thresh": 13.7772,
   "tc_cut": 0.6574,
   "abs_slip": 0.0,
-  "abs_range": 0.1
+  "abs_range": 0.1,
+  "ctrl": 1,
+  "ff_gain": 1.0,
+  "ff_lead": 0.1
 }
