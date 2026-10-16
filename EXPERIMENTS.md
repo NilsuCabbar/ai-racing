@@ -229,7 +229,7 @@ Notes on E11: nothing is driven yet; these are model numbers. Script: `mapped/st
   noisy. So the absolute lap estimates are rough (±10 % mu ≈ ±2.5 s); the comparison of lines inside the same model
   is the useful part.
 
-| limit |trackPos| | max |trackPos| on line | path length (m) | tightest radius (m) | est. lap (s) | vs E9 (s) | mu -10% / +10% (s) |
+| limit \|trackPos\| | max \|trackPos\| on line | path length (m) | tightest radius (m) | est. lap (s) | vs E9 (s) | mu -10% / +10% (s) |
 |---|---|---|---|---|---|---|
 | 0.6 | 0.600 | 3572.7 | 22.4 | 75.39 | -4.16 | 77.91 / 73.24 |
 | 0.75 | 0.750 | 3565.2 | 24.4 | 74.42 | -5.13 | 76.99 / 72.24 |
@@ -556,7 +556,7 @@ of the best. Gate for `tc_thresh` 16 (`results/e19_tc16_gate.txt`): 76.574 s, 3 
 76.638). The partial-throttle steps in #9–#10 (157 vs 158) and #13 (82 vs 85) and the stretch times (5.76 / 4.93 s) are the
 same as E17b, so the TC does not cut more at the crest than it should. Rejected: 0.024 s is noise against 20/20 → 19/20.
 
-| 2026-10-16 | E20 map: exit guard at high steering | throttle ≤ max(0.2, 1 − 2·(|steer| − 0.6)); optional brake limit at full lock (`lock_brake`) | 76.872 (grip 0.90) / 76.906 (grip 0.95) | 0 | – | – | – | – |
+| 2026-10-16 | E20 map: exit guard at high steering | throttle ≤ max(0.2, 1 − 2·(\|steer\| − 0.6)); optional brake limit at full lock (`lock_brake`) | 76.872 (grip 0.90) / 76.906 (grip 0.95) | 0 | – | – | – | – |
 
 Notes on E20 (`mapped/my_driver.py`: `exit_steer`, `exit_k`, `exit_min`, `lock_brake`; off by default).
 What happens at #13 (`results/e17b_trace_g090.csv`, `mapped/trace_e17b_g095.csv`): the car enters the left hairpin
