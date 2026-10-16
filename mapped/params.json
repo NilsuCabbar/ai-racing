@@ -1,0 +1,23 @@
+{
+  "scale": 1.0,
+  "look_t": 0.15,
+  "look_min": 6.0,
+  "steer_gain": 1.0,
+  "lead_t": 0.0,
+  "full_band": 1.0,
+  "brake_gain": 0.08,
+  "safe_decel": 35.0,
+  "safe_margin": 4.0,
+  "safe_floor": 60.0,
+  "edge_pos": 0.97,
+  "max_gear": 6,
+  "up_rpm": 17095.3119,
+  "down_rpm": 10421.859,
+  "tc_thresh": 13.7772,
+  "tc_cut": 0.6574,
+  "abs_slip": 0.0,
+  "abs_range": 0.1,
+  "ctrl": 1,
+  "ff_gain": 1.0,
+  "ff_lead": 0.1
+}

@@ -1,96 +1,99 @@
 # AI Racing – TORCS Corkscrew driver (IBM AI Racing League)
 
-A Python driver for the TORCS `scr_server` car (600 kg open-wheel car, `car1-ow1`) on the **Corkscrew** track.
-Only the Python AI code is changed; the car model is untouched. All laps start from a standing start.
+**Best lap: 76.598 s** – E17b, commit `46fb967`, driver in `mapped/`.
+Corkscrew, 1 lap, standing start, `car1-ow1` via `scr_server`; damage 0, off track 0 s, the 3-lap race is clean, and
+20 of 20 variants with every parameter changed by ±1 % are clean.
 
-**Best clean lap: 83.63 s** (no damage, never off track). Starting point was a driver that could not finish the lap.
+Only the Python driver code changes; the car, the track and the organizers' TORCS stay untouched.
 
-| Step | Lap time |
+| Step | Driver | Lap (s) |
+|---|---|---|
+| Original team driver (`my_driver.py` + `best_params.json`) | sensors only | 84.788 |
+| Tuna's driver (`tuna/`) | sensors only | 80.332 |
+| E9: Tuna's driver, parameters tuned with CMA-ES (`fast/`) | sensors only | 79.556 |
+| **E17b: track map + racing line + speed profile with elevation (`mapped/`)** | **track map** | **76.598** |
+
+All times are measured the same way: headless TORCS, `baseline/run_lap.py`, TORCS's own `lastLapTime` from the green
+light. The simulation is deterministic, so the same code and parameters always give the same time.
+Full history: [PROGRESS.md](PROGRESS.md) (one row per accepted or rejected change),
+details of every experiment: [EXPERIMENTS.md](EXPERIMENTS.md).
+
+> **Track map rule.** `mapped/` reads the track file (`tracks/road/corkscrew/corkscrew.xml`). The organizers have said
+> this is allowed; the team is still confirming it. If it turns out not to be allowed, use **`fast/`** (E9, 79.556 s),
+> which uses only the live sensors.
+
+## Layout
+
+```
+working_space\
+  RaceYourCode\     this repo
+  torch\torcs\      the organizers' TORCS (wtorcs.exe), not modified
+  torcs-env\        Python venv (numpy; the drivers themselves need only the standard library)
+```
+
+| Folder / file | What it is |
 |---|---|
-| IBM sample driver (`torcs_jm_par.py`, default settings) | did not finish (crashed at ~2.5 km) |
-| `my_driver.py` first version (look-ahead braking) | 147.15 s |
-| + parameter search | 106.09 s |
-| + aim at the longest track sensor, steering smoothing, mixed look-ahead | 85.74 s |
-| + high-rpm gear shifting (engine peaks near 18 000 rpm) and re-tuned braking/traction | **83.63 s** |
+| `mapped/` | **main driver**: follows a precomputed racing line and speed table (`my_driver.py`, `params.json`, `table.csv`) and the tools that build the table |
+| `fast/` | **fallback**, sensors only: Tuna's driver with CMA-ES-tuned parameters (E9) |
+| `tuna/` | Tuna's original driver and tools (80.332 s); not changed |
+| `baseline/` | lap runner (`run_lap.py`), robustness test (`perturb_test.py`), race files |
+| `my_driver.py`, `best_params.json`, `lap_runner.py`, `search.py` | the original team driver and its tools |
+| `torcs_jm_par.py` | SCR client from the IBM starter kit (not our work); every runner uses its `Client` |
+| `results/` | logs, traces and test outputs referenced from EXPERIMENTS.md |
 
-The simulation is deterministic: the same parameters give the same lap time every run.
+## Running
 
-## How the driver works (`my_driver.py`)
+From `RaceYourCode` (Windows, PowerShell or cmd). Each command starts TORCS without a window, drives one lap and
+prints the lap time, damage and off-track time (one lap takes about 2 s). Run one TORCS at a time: they all use UDP port 3001.
 
-Per tick it reads the TORCS sensors and sends `steer`, `accel`, `brake`, `gear`.
-
-- **Steering:** classic angle/track-position controller, blended with the direction of the *longest* of the 19 track sensors (`aim_w`), then low-pass filtered (`smooth`).
-- **Target speed:** the speed from which the car can still stop in the free distance ahead (`decel`, `margin`), floored by `min_speed`. `mix` blends the straight-ahead distance with the longest-sensor distance so the car accelerates earlier out of corners.
-- **Throttle / brake:** proportional to (target − speed) with `accel_gain` / `brake_gain`.
-- **Traction control:** cuts throttle when rear wheels spin faster than front wheels (`tc_thresh`, `tc_cut`).
-- **Gears:** rpm based. The engine makes most power at 16–18 k rpm, so the car upshifts at `up_rpm` (16 500) and downshifts at `down_rpm` (10 000).
-
-All tunable values are in `best_params.json`.
-
-## Requirements
-
-- Windows (tested on Windows 11) with TORCS + the SCR `scr_server` driver
-- Python 3.8+ (tested on 3.13). Standard library only, no `pip install` needed for the driver.
-
-## TORCS setup (once)
-
-1. Start TORCS → **Race → Quick Race → Configure Race**.
-2. Track: **Corkscrew** (category *road*).
-3. Driver: **`scr_server`** (the driver the Python client controls).
-4. Laps: set to a high number (e.g. 20). With 1 lap TORCS shuts the server down at the finish and the race has to be restarted by hand; with many laps the runner restarts the race itself after the first lap, which is what the parameter search needs.
-5. (Optional, ~35× faster for searches) set `display mode` to `results only` in `config/raceman/quickrace.xml`. Remove it again if you want to watch the car.
-
-## Run
-
-1. In TORCS: **Race → Quick Race → New Race**. The screen stays blue/black and waits for a client (UDP port 3001).
-2. In a terminal, in this folder:
+Main driver, track map (76.598 s):
 
 ```bash
-py lap_runner.py --driver mine --params-file best_params.json
+..\torcs-env\Scripts\python baseline\run_lap.py --code-dir mapped --params-file mapped\params.json
 ```
 
-Expected output:
-
-```
-=== SONUC ===
-result: finished
-lap_time_s: 83.63
-off_track_s: 0.0
-max_damage: 0.0
-```
-
-Each run is appended to `runs.csv` (lap time, time off track, damage, parameters).
-
-Useful options of `lap_runner.py`:
-
-| Option | Meaning |
-|---|---|
-| `--driver mine` | our driver (`jm` = IBM sample driver) |
-| `--params-file FILE` / `--params JSON` | parameter set |
-| `--trace` | write `trace.csv` (position, speed, commands every 10 steps) |
-| `--max-seconds N` | simulated-time limit (default 300) |
-| `--tag TEXT` | note stored in `runs.csv` |
-
-### Re-running the parameter search
+Fallback, sensors only (79.556 s):
 
 ```bash
-py search.py --n 100 --seed 1 --prefix s_
+..\torcs-env\Scripts\python baseline\run_lap.py --code-dir fast --params-file fast\params.json
 ```
 
-Random search plus local refinement over the parameters listed in `SPACE` in `search.py`.
-Score = lap time + 3 × seconds off track + 0.05 × damage (unfinished laps get a large penalty).
-The best set is written to `best_params.json` (`--out FILE` to change). Use `--fix "{\"up_rpm\": 16500}"` to hold parameters constant.
-Stop with Ctrl+C; results already written to `runs.csv` are kept.
+Useful options of `baseline/run_lap.py`: `--race-xml baseline\corkscrew_3lap.xml --max-sim-s 400` (3-lap race),
+`--trace --trace-every 1 --trace-beams --trace-file FILE` (telemetry), `--params "{\"look_t\": 0.2}"` (override),
+`--attach` (drive a race that waits in the TORCS window: Race → Quick Race → New Race, real time).
 
-## Files
+Acceptance gate for the map driver (1 lap, 3 laps, 20 × ±1 %; about 2 minutes):
 
-| File | Purpose |
-|---|---|
-| `my_driver.py` | the driver |
-| `lap_runner.py` | runs one lap with a parameter set and measures it |
-| `search.py` | automatic parameter search |
-| `best_params.json` | best parameters (83.63 s) |
-| `torcs_jm_par.py` | SCR client / IBM sample driver from the competition starter kit (not our work); `lap_runner.py` uses its `Client` |
+```bash
+..\torcs-env\Scripts\python mapped\gate.py --tag check
+```
+
+Rebuild the map driver's table (gives exactly the committed `mapped/table.csv`):
+
+```bash
+..\torcs-env\Scripts\python mapped\build_table.py --tp 0.75 --mu 2.596 --grip 0.90 --crest
+```
+
+## How the map driver works
+
+1. **Track geometry** (`mapped/track.py`): the centreline is rebuilt from the 66 segments of `corkscrew.xml`. Turns with
+   an end radius are split the way TORCS does it, which gives the exact lap length (3608.45 m). Checked against a real
+   lap: the 19 range sensors, cast on the map, match within 2.5 cm (median).
+2. **Racing line** (`mapped/line.py`): K1999-style curvature smoothing. Each point moves sideways until its curvature
+   is the mean of its neighbours', within |trackPos| ≤ 0.75.
+3. **Speed profile**: point-mass model, cornering grip mu·g, braking 3 g scaled by the same grip factor, and acceleration
+   measured on a real lap, with a friction circle; mu is calibrated on a real lap (2.596).
+4. **Elevation and crests**: the height profile is a spline from the segments' grades and end slopes. Over crests the
+   load drops to g − v²·κ, which lowers grip, braking and traction there. This is what makes the Corkscrew safe.
+5. **Driving** (`mapped/my_driver.py`): position on the map from distFromStart, trackPos and angle. Steering is a
+   curvature feedforward plus a short pure-pursuit correction. Throttle and brake follow the table speed, with a speed
+   cap from the front sensors and an edge guard. Traction control and gear shifting come from the sensor driver
+   (its ABS is there but switched off).
+6. **Acceptance gate** (`mapped/gate.py`): a change counts only if the 1-lap run has 0 damage and 0 s off track, the
+   3-lap race is clean, and at least 19 of 20 ±1 % variants are clean.
+
+The sensor-only fallback (`fast/`) brakes for a corner speed estimated from the longest range-sensor beam, uses
+full throttle below the target, and aims at the longest beam. Tuna's README in `tuna/` explains it.
 
 ## IBM Granite and IBM SkillsBuild
 
@@ -100,7 +103,9 @@ _To be filled in by the team: how IBM Granite was used in this project and the S
 
 ## Kısa Türkçe özet
 
-1. TORCS'ta Quick Race → pist **Corkscrew**, sürücü **scr_server**, tur sayısı **20**.
-2. **Race → Quick Race → New Race** (mavi bekleme ekranı).
-3. Bu klasörde terminalde: `py lap_runner.py --driver mine --params-file best_params.json`
-4. Sonuç `runs.csv`'ye yazılır. En iyi temiz tur: **83,63 sn**.
+- En iyi tur **76,598 sn** (E17b, `mapped/`): pist haritası, yarış çizgisi, yükseklikli hız profili. Hasar 0, pist
+  dışı 0, 3 tur temiz, ±%1'de 20/20.
+- Pist haritası yasak çıkarsa yedek: `fast/` (E9, sadece sensör), **79,556 sn**.
+- Çalıştırma: `..\torcs-env\Scripts\python baseline\run_lap.py --code-dir mapped --params-file mapped\params.json`
+  (yedek için `mapped` yerine `fast`).
+- İlerleme tablosu: [PROGRESS.md](PROGRESS.md), ayrıntılar: [EXPERIMENTS.md](EXPERIMENTS.md).

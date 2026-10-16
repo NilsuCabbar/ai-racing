@@ -1,0 +1,32 @@
+STEP 2: racing line (K1999-style curvature smoothing) and point-mass lap estimate. Not driven yet.
+Track 3608.45 m, half width 6.0 m. Model: lateral grip mu*g, braking 3.0 g, full-throttle table from the E9 lap, friction circle.
+Calibration: mu = 2.697 makes the model give E9's real lap (79.556 s) on E9's own line (E9's lateral g measured on the map: ~1.8 g at 50 km/h, 2.0-2.4 g at 60-160 km/h).
+
+| limit |trackPos| | max |trackPos| on line | path length (m) | tightest radius (m) | est. lap (s) | vs E9 (s) | mu -10% / +10% (s) |
+|---|---|---|---|---|---|---|
+| 0.6 | 0.600 | 3572.7 | 22.4 | 75.39 | -4.16 | 77.91 / 73.24 |
+| 0.75 | 0.750 | 3565.2 | 24.4 | 74.42 | -5.13 | 76.99 / 72.24 |
+| 0.9 | 0.900 | 3557.8 | 26.5 | 73.60 | -5.95 | 76.22 / 71.34 |
+| centreline (0) | 0 | 3608.4 | 11.5 | 80.16 | +0.60 | |
+| E9 driven line | 0.928 | 3573.5 | 13.7 | 79.556 (real) | 0 | |
+
+Corners: E9's driven line vs the |trackPos|<=0.75 line. trackPos: + = left. 'out/in' is relative to the corner.
+Model time = point-mass model on each line with the same mu; 'E9 real' = E9's real time through the same stretch.
+| # | from-to (m) | turn | angle | min centre radius | E9 trackPos entry/apex/exit | line entry/apex/exit | min path radius E9 / line (m) | min speed E9 real / line model (km/h) | stretch (m) | model time E9 line / racing line (s) | gain (s) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 185-221 | L | 25 deg | 86.5 | -0.77/-0.77/-0.50 | -0.51/-0.51/-0.53 | 91 / 345 | 176 / 225 | 125-281 | 2.80 / 2.45 | +0.35 |
+| 2 | 407-540 | L | 197 deg | 24.0 | -0.80/-0.13/+0.15 | -0.08/-0.62/+0.28 | 25 / 35 | 83 / 109 | 347-564 | 6.31 / 6.21 | +0.10 |
+| 3 | 589-638 | R | 17 deg | 105.7 | -0.71/-0.71/-0.69 | -0.75/-0.75/-0.06 | 187 / 243 | 178 / 182 | 564-685 | 2.19 / 2.29 | -0.09 |
+| 4 | 733-806 | R | 94 deg | 44.2 | -0.80/-0.80/-0.06 | +0.02/+0.02/-0.06 | 35 / 53 | 98 / 135 | 685-866 | 4.60 / 4.28 | +0.32 |
+| 5 | 995-1074 | R | 71 deg | 48.0 | -0.78/-0.33/-0.27 | +0.00/-0.33/-0.21 | 49 / 81 | 128 / 167 | 935-1134 | 4.40 / 3.86 | +0.54 |
+| 6 | 1477-1612 | L | 116 deg | 48.0 | -0.77/-0.50/-0.20 | +0.14/-0.75/+0.36 | 45 / 56 | 116 / 138 | 1417-1672 | 5.65 / 5.68 | -0.03 |
+| 7 | 1918-1949 | L | 55 deg | 33.6 | -0.80/-0.80/-0.09 | -0.42/-0.42/-0.35 | 31 / 87 | 110 / 173 | 1858-2009 | 3.84 / 2.94 | +0.90 |
+| 8 | 2351-2378 | R | 17 deg | 62.5 | -0.76/-0.76/-0.40 | -0.50/-0.50/-0.75 | 130 / 249 | 208 / 167 | 2291-2405 | 1.82 / 2.19 | -0.37 |
+| 9 | 2432-2469 | L | 103 deg | 11.5 | -0.81/+0.83/+0.87 | +0.10/-0.64/-0.55 | 14 / 26 | 54 / 95 | 2405-2476 | 3.00 / 2.51 | +0.50 |
+| 10 | 2484-2597 | R | 102 deg | 14.4 | -0.86/-0.86/+0.38 | -0.56/-0.56/+0.50 | 15 / 37 | 70 / 113 | 2476-2597 | 3.84 / 3.05 | +0.79 |
+| 11 | 2598-2784 | L | 121 deg | 48.0 | -0.41/-0.79/-0.26 | -0.52/-0.69/-0.14 | 58 / 70 | 137 / 155 | 2597-2844 | 5.25 / 5.06 | +0.20 |
+| 12 | 2943-3020 | R | 81 deg | 52.8 | -0.79/-0.29/-0.23 | +0.03/-0.25/-0.09 | 47 / 69 | 119 / 154 | 2883-3080 | 4.46 / 4.15 | +0.31 |
+| 13 | 3250-3286 | L | 116 deg | 18.3 | -0.81/-0.42/+0.83 | -0.14/-0.70/-0.14 | 14 / 24 | 48 / 91 | 3190-3346 | 5.32 / 4.90 | +0.42 |
+Sum over corner stretches (no overlap): +3.91 s, the rest is on the straights; whole lap model: E9 line 79.55 s, racing line 74.42 s (-5.13 s).
+
+Line tables: mapped/line_tp060.csv, mapped/line_tp075.csv, mapped/line_tp090.csv (distFromStart, trackPos, offset_m, curvature, radius_m, v_kmh = model speed).

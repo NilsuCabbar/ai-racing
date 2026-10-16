@@ -1,0 +1,2 @@
+1 lap: finished lap 77.978 damage 0.0 off 0.6 top 267.3 -> FAIL
+GATE e21_g100: lap 77.978 | 1-lap FAIL | 3-lap - | perturb - | FAIL

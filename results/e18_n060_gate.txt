@@ -1,0 +1,2 @@
+1 lap: finished lap 76.868 damage 0.0 off 0.0 top 268.5 -> ok
+GATE e18_n060: lap 76.868 | 1-lap ok | 3-lap - | perturb - | PASS

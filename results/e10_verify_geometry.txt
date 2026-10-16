@@ -1,0 +1,49 @@
+track length 3608.45 m; 776 trace rows
+shift of distFromStart (m) -> median |error| over all beams < 200 m
+   -4.0: 0.699 m
+   -2.0: 0.401 m
+   -1.0: 0.240 m
+   -0.5: 0.136 m
+   +0.0: 0.025 m
+   +0.5: 0.134 m
+   +1.0: 0.227 m
+   +2.0: 0.381 m
+   +4.0: 0.675 m
+
+per beam (shift 0): median |error| / 95th percentile |error| (m), beams that hit an edge
+   -45.0 deg:  0.003 /  0.011   n=775
+   -19.0 deg:  0.010 /  0.047   n=775
+   -12.0 deg:  0.019 /  0.099   n=772
+    -7.0 deg:  0.035 /  0.349   n=767
+    -4.0 deg:  0.047 /  0.454   n=746
+    -2.5 deg:  0.050 /  0.583   n=736
+    -1.7 deg:  0.047 /  0.720   n=735
+    -1.0 deg:  0.041 /  0.601   n=722
+    -0.5 deg:  0.039 /  0.698   n=723
+    +0.0 deg:  0.039 /  0.678   n=718
+    +0.5 deg:  0.039 /  0.679   n=723
+    +1.0 deg:  0.041 /  0.563   n=721
+    +1.7 deg:  0.041 /  0.489   n=726
+    +2.5 deg:  0.042 /  0.458   n=737
+    +4.0 deg:  0.045 /  0.592   n=761
+    +7.0 deg:  0.036 /  0.253   n=768
+   +12.0 deg:  0.020 /  0.095   n=771
+   +19.0 deg:  0.011 /  0.049   n=773
+   +45.0 deg:  0.003 /  0.010   n=776
+
+by section: median |error| of the +-45/19/12 deg beams (near edges) and of all beams
+      0-  300 m: near 0.008  all 0.041  (95th all 0.55)
+    300-  600 m: near 0.008  all 0.015  (95th all 0.12)
+    600-  900 m: near 0.007  all 0.023  (95th all 0.44)
+    900- 1200 m: near 0.008  all 0.021  (95th all 0.22)
+   1200- 1500 m: near 0.007  all 0.023  (95th all 0.32)
+   1500- 1800 m: near 0.009  all 0.023  (95th all 0.88)
+   1800- 2100 m: near 0.009  all 0.036  (95th all 0.27)
+   2100- 2400 m: near 0.009  all 0.055  (95th all 0.54)
+   2400- 2700 m: near 0.008  all 0.016  (95th all 0.15)
+   2700- 3000 m: near 0.006  all 0.016  (95th all 0.20)
+   3000- 3300 m: near 0.009  all 0.022  (95th all 0.62)
+   3300- 3600 m: near 0.008  all 0.066  (95th all 0.81)
+   3600- 3900 m: near 0.010  all 0.057  (95th all 0.45)
+
++-45 deg beams overall: median 0.003 m, 99th 0.025 m, max 0.273 m
