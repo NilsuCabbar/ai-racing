@@ -268,7 +268,7 @@ Corner stretches sum to +3.91 s, the straights to the remaining 1.22 s. Where th
 - **#13, last hairpin (3250–3286 m)**: E9 is pushed out to +0.83 at the exit; the line holds −0.70 at the apex: +0.42 s.
 - **#8 (2351 m)** shows −0.37 s: the model starts braking there for the Corkscrew at 3 g, while E9 really carries 208 km/h
   and brakes later and harder. Braking points will need tuning once it drives.
-- E9 drives with almost no "outside-in": its entry trackPos is −0.7…−0.86 (inside) in 11 of 13 corners.
+- E9 drives with almost no "outside-in": its entry trackPos is on the inside in all 13 corners (−0.71…−0.86 in 12 of them).
 
 Line tables (distFromStart → trackPos, offset, curvature, radius, model speed): `mapped/line_tp060.csv`,
 `mapped/line_tp075.csv`, `mapped/line_tp090.csv`.
