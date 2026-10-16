@@ -41,6 +41,7 @@ def main():
     ap.add_argument("--scale", type=float, default=0.85)
     ap.add_argument("--mu", type=float, default=2.70)
     ap.add_argument("--brake-g", type=float, default=3.0)
+    ap.add_argument("--crest", action="store_true", help="model with the crest load model (E17)")
     ap.add_argument("--ref", default=None, help="another trace to compare times with (e.g. the E9 lap)")
     a = ap.parse_args()
     t = Track()
@@ -67,8 +68,17 @@ def main():
     # model on the same line with grip and braking scaled by scale^2 (cornering and braking at scale x speed)
     _, _, ds, k = L.path(t, off)
     sc2 = a.scale ** 2
-    lap_m, v_m, order = L.standing_lap(t, k, ds, mu=a.mu * sc2, brake_g=a.brake_g * sc2)
-    lap_full = L.standing_lap(t, k, ds, mu=a.mu, brake_g=a.brake_g)[0]
+    kc = t.crest if a.crest else None
+    n = len(k)
+    i_grid = int(round((t.length - L.GRID_BEHIND) / t.ds)) % n
+    order = [(i_grid + j) % n for j in range(n + int(round(L.GRID_BEHIND / t.ds)) + 1)]
+
+    def model(mu, bg):
+        vv = L.speed_profile(k[order], ds[order], mu=mu, brake_g=bg, crest=None if kc is None else kc[order])
+        return float(np.sum(2.0 * ds[order][:-1] / np.maximum(vv[:-1] + vv[1:], 1e-6))), vv
+
+    lap_m, v_m = model(a.mu * sc2, a.brake_g * sc2)
+    lap_full = model(a.mu, a.brake_g)[0]
     dt = 2.0 * ds[order[:-1]] / np.maximum(v_m[:-1] + v_m[1:], 1e-6)
     tc = np.concatenate([[0], np.cumsum(dt)])
     nst = int(round(L.GRID_BEHIND / t.ds))

@@ -24,11 +24,12 @@ import line as L  # noqa: E402
 from track import Track  # noqa: E402
 
 
-def flying_profile(t, k, ds, mu, brake_g):
+def flying_profile(t, k, ds, mu, brake_g, crest=None):
     n = len(k)
     order = [j % n for j in range(3 * n + 1)]
     mu = np.broadcast_to(np.asarray(mu, dtype=float), (n,))
-    v = L.speed_profile(k[order], ds[order], mu=mu[order], brake_g=brake_g)
+    v = L.speed_profile(k[order], ds[order], mu=mu[order], brake_g=brake_g,
+                        crest=None if crest is None else crest[order])
     out = np.zeros(n)
     out[np.array(order[n:2 * n])] = v[n:2 * n]
     return out
@@ -45,15 +46,16 @@ def grip_factor(t, local):
     return g
 
 
-def build(tp, mu, brake_g, out_path, grip=1.0, local=()):
+def build(tp, mu, brake_g, out_path, grip=1.0, local=(), crest=False):
     t = Track()
     l = L.racing_line(t, tp)
     x, y, ds, k = L.path(t, l)
     gf = grip_factor(t, local)
-    v = flying_profile(t, k, ds, mu * grip * gf, brake_g * grip)
+    kc = t.crest if crest else None
+    v = flying_profile(t, k, ds, mu * grip * gf, brake_g * grip, kc)
     with open(out_path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow([f"# tp_max={tp} mu={mu} brake_g={brake_g} grip={grip} local={','.join(local) or '-'} "
+        w.writerow([f"# tp_max={tp} mu={mu} brake_g={brake_g} grip={grip} local={','.join(local) or '-'} crest={int(crest)} "
                     f"length={t.length:.4f} ds={t.ds:.6f}"])
         w.writerow(["s", "offset", "lx", "ly", "cx", "cy", "yaw", "k", "v"])
         for i in range(len(t.s)):
@@ -62,7 +64,8 @@ def build(tp, mu, brake_g, out_path, grip=1.0, local=()):
     n = len(k)
     i_grid = int(round((t.length - L.GRID_BEHIND) / t.ds)) % n
     order = [(i_grid + j) % n for j in range(n + int(round(L.GRID_BEHIND / t.ds)) + 1)]
-    vv = L.speed_profile(k[order], ds[order], mu=(mu * grip * gf)[order], brake_g=brake_g * grip)
+    vv = L.speed_profile(k[order], ds[order], mu=(mu * grip * gf)[order], brake_g=brake_g * grip,
+                         crest=None if kc is None else kc[order])
     lap = float(np.sum(2.0 * ds[order][:-1] / np.maximum(vv[:-1] + vv[1:], 1e-6)))
     return lap, v
 
@@ -74,9 +77,11 @@ if __name__ == "__main__":
     ap.add_argument("--brake-g", type=float, default=3.0)
     ap.add_argument("--grip", type=float, default=1.0, help="scales mu and brake_g, not acceleration")
     ap.add_argument("--local", action="append", default=[], metavar="A:B:F", help="extra grip factor F on [A, B] m")
+    ap.add_argument("--crest", action="store_true", help="lower grip, braking and traction on crests (E17)")
     ap.add_argument("--out", default=os.path.join(HERE, "table.csv"))
     a = ap.parse_args()
-    lap, v = build(a.tp, a.mu, a.brake_g, a.out, a.grip, a.local)
-    print(f"table {a.out}: tp_max {a.tp}, mu {a.mu}, brake {a.brake_g} g, grip x{a.grip}, local {a.local}; "
+    lap, v = build(a.tp, a.mu, a.brake_g, a.out, a.grip, a.local, a.crest)
+    print(f"table {a.out}: tp_max {a.tp}, mu {a.mu}, brake {a.brake_g} g, grip x{a.grip}, local {a.local}, "
+          f"crest {a.crest}; "
           f"model standing lap {lap:.2f} s; "
           f"speed {v.min() * 3.6:.0f}-{v.max() * 3.6:.0f} km/h")

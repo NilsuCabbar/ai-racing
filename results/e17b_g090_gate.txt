@@ -1,0 +1,38 @@
+1 lap: finished lap 76.598 damage 0.0 off 0.0 top 268.5 -> ok
+nominal : laps [76.598, 73.086, 73.06] damage 0 off 0 CLEAN
+  v00: laps 76.674 73.318 73.178    damage     0 off     0  clean
+  v01: laps 76.794 73.284 73.192    damage     0 off     0  clean
+  v02: laps 76.612 73.228 73.122    damage     0 off     0  clean
+  v03: laps 76.622 73.162 73.204    damage     0 off     0  clean
+  v04: laps 76.720 73.234 73.038    damage     0 off     0  clean
+  v05: laps 76.612 73.278 73.124    damage     0 off     0  clean
+  v06: laps 76.744 73.288 73.268    damage     0 off     0  clean
+  v07: laps 76.736 73.364 73.234    damage     0 off     0  clean
+  v08: laps 76.594 73.086 72.986    damage     0 off     0  clean
+  v09: laps 76.760 73.242 73.078    damage     0 off     0  clean
+  v10: laps 76.618 73.050 73.086    damage     0 off     0  clean
+  v11: laps 76.754 73.172 73.148    damage     0 off     0  clean
+  v12: laps 76.738 73.190 73.134    damage     0 off     0  clean
+  v13: laps 76.562 73.214 73.036    damage     0 off     0  clean
+  v14: laps 76.532 73.098 72.990    damage     0 off     0  clean
+  v15: laps 76.886 73.338 73.304    damage     0 off     0  clean
+  v16: laps 76.740 73.248 73.196    damage     0 off     0  clean
+  v17: laps 77.190 73.392 73.436    damage     0 off     0  clean
+  v18: laps 76.582 73.102 73.078    damage     0 off     0  clean
+  v19: laps 76.606 73.252 73.182    damage     0 off     0  clean
+
+=== PERTURB ===
+           tag: e17b_g090
+             n: 20
+           rel: 0.01
+          seed: 7
+         clean: 20
+       damaged: 0
+     off_track: 0
+    unfinished: 0
+     lap1_mean: 76.704
+    lap1_worst: 77.19
+     lap1_best: 76.532
+  nominal_lap1: 76.598
+ nominal_clean: True
+GATE e17b_g090: lap 76.598 | 1-lap ok | 3-lap ok | perturb 20/20 | PASS

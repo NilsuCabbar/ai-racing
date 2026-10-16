@@ -85,29 +85,36 @@ def path(t, l):
     return x, y, ds, k
 
 
-def speed_profile(k, ds, mu=1.3, brake_g=2.0, v_top=320.0):
+def speed_profile(k, ds, mu=1.3, brake_g=2.0, v_top=320.0, crest=None):
     """Point-mass speeds (m/s) along an open sequence of samples that starts at rest. mu: scalar or per sample.
     k[i]: curvature at sample i, ds[i]: distance from sample i to i+1. Grip is a friction circle: what cornering
-    uses is not available for accelerating or braking."""
+    uses is not available for accelerating or braking.
+    crest (1/m per sample, + on a crest): the normal load drops to g - v^2 * crest, so cornering grip, braking and
+    traction scale with load = 1 - v^2 * crest / g there (dips are not credited)."""
     acc_v = np.array(ACC_TABLE_KMH) / 3.6
     acc_a = np.array(ACC_TABLE)
     mu = np.broadcast_to(np.asarray(mu, dtype=float), np.shape(k))  # scalar, or one value per sample
-    v = np.minimum(np.sqrt(mu * G / np.maximum(np.abs(k), 1e-9)), v_top / 3.6)
+    kc = np.zeros(len(k)) if crest is None else np.maximum(np.asarray(crest, dtype=float), 0.0)
+    # v^2 |k| <= mu (g - v^2 kc)  ->  v^2 <= mu g / (|k| + mu kc)
+    v = np.minimum(np.sqrt(mu * G / np.maximum(np.abs(k) + mu * kc, 1e-9)), v_top / 3.6)
     m = len(k)
 
-    def left(i):  # share of grip left after cornering
-        lat = v[i] ** 2 * abs(k[i]) / (mu[i] * G)
-        return math.sqrt(max(0.0, 1.0 - min(1.0, lat) ** 2))
+    def left(i, vi):  # share of grip left after cornering at sample i and speed vi, times the normal load
+        ld = max(0.05, 1.0 - vi ** 2 * kc[i] / G)
+        lat = vi ** 2 * abs(k[i]) / (mu[i] * G * ld)
+        return ld * math.sqrt(max(0.0, 1.0 - min(1.0, lat) ** 2))
 
     def forward():
         v[0] = 0.0
         for i in range(m - 1):
-            acc = np.interp(v[i], acc_v, acc_a) * left(i)
+            acc = np.interp(v[i], acc_v, acc_a) * left(i, v[i])
             v[i + 1] = min(v[i + 1], math.sqrt(v[i] ** 2 + 2.0 * acc * ds[i]))
 
     forward()
     for i in range(m - 2, -1, -1):
-        v[i] = min(v[i], math.sqrt(v[i + 1] ** 2 + 2.0 * brake_g * G * left(i) * ds[i]))
+        # the braking grip is evaluated at the known speed v[i+1] (E17 fix: before, it used the not yet lowered
+        # v[i], which near a corner left almost no grip for braking and made every braking point too early)
+        v[i] = min(v[i], math.sqrt(v[i + 1] ** 2 + 2.0 * brake_g * G * left(i, v[i + 1]) * ds[i]))
     forward()  # the backward pass can lower earlier points; accelerate again from there
     return v
 

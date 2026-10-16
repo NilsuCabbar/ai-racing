@@ -9,6 +9,11 @@ Rebuilds the 2D centreline of the main track from its segments, the way TORCS la
 Distances along the track are 2D lengths, like TORCS's distFromStart; the start line is the start of the
 first segment. Left is +, like trackPos (+1 = left edge).
 
+Elevation: each segment rises by grade x length; between its ends the height is a cubic (Hermite) curve whose end
+slopes are the previous segment's and this segment's `profil end tangent`. This spline profile explains the car's
+measured ride height better than a linear one (E17: R^2 0.92 vs 0.88-0.90). crest[i] = -z'' (1/m, + on a crest),
+smoothed over 5 m; the closure error (0.77 m) is spread linearly over the lap.
+
     py mapped/track.py            # summary of the Corkscrew
 """
 import math
@@ -42,7 +47,8 @@ def load_segments(path=TRACK_XML):
     for sec in main.find("section[@name='Track Segments']").findall("section"):
         a = _attnums(sec)
         typ = sec.find("attstr[@name='type']").get("val")
-        seg = {"name": sec.get("name"), "type": typ, "step_len": a.get("profil steps length", step_len)}
+        seg = {"name": sec.get("name"), "type": typ, "step_len": a.get("profil steps length", step_len),
+               "grade": a.get("grade", 0.0) / 100.0, "end_tangent": a.get("profil end tangent", 0.0) / 100.0}
         if typ == "str":
             seg["lg"] = a["lg"]
         else:
@@ -122,6 +128,23 @@ class Track:
         self.s, self.k, self.names = s, k, names
         self.x, self.y, self.yaw = x[:n], y[:n], yaw[:n]
         self.closure = (x[n] - x[0], y[n] - y[0], math.degrees(yaw[n] - yaw[0]))
+        self.z, self.crest = self._elevation()
+
+    def _elevation(self):
+        z = np.zeros(len(self.s))
+        z0, t_in, start = 0.0, self.segs[-1]["end_tangent"], 0.0
+        for sg in self.segs:
+            L = sg["lg"]
+            m = (self.s >= start) & (self.s < start + L)
+            u = (self.s[m] - start) / L
+            z1 = z0 + sg["grade"] * L
+            z[m] = ((2 * u ** 3 - 3 * u ** 2 + 1) * z0 + (u ** 3 - 2 * u ** 2 + u) * L * t_in
+                    + (-2 * u ** 3 + 3 * u ** 2) * z1 + (u ** 3 - u ** 2) * L * sg["end_tangent"])
+            z0, t_in, start = z1, sg["end_tangent"], start + L
+        z -= z0 * self.s / self.length              # spread the closure error
+        zs = sum(np.roll(z, j) for j in range(-2, 3)) / 5.0
+        d2 = (np.roll(zs, -1) - 2 * zs + np.roll(zs, 1)) / self.ds ** 2
+        return z, -d2
 
     def idx(self, s):
         return np.asarray(np.round(np.mod(s, self.length) / self.ds), dtype=int) % len(self.s)

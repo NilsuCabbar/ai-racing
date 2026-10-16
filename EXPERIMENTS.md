@@ -482,3 +482,52 @@ are the traction-limited exits. Against E9 it is still +0.50 s: faster in the Co
 | 11 | 2598-2784 L | 2597-2844 | 146 / 147 | 2.82 | 5.1 | 5.33 / 5.31 | +0.02 | 5.38 / -0.05 |
 | 12 | 2943-3020 R | 2883-3080 | 146 / 146 | 3.30 | 4.2 | 4.44 / 4.37 | +0.07 | 4.38 / +0.06 |
 | 13 | 3250-3286 L | 3190-3346 | 86 / 87 | 3.14 | 12.8 | 5.52 / 5.14 | +0.38 | 5.59 / -0.07 |
+
+| 2026-10-16 | E17a map: braking-pass fix | `line.py` backward pass evaluates the braking grip at the known speed; mu recalibrated to 2.393; grip 0.90 | DNF-like (damage 64) | 64 | – | – | – | – |
+| 2026-10-16 | E17b map: crest model | elevation spline from the XML, grip/braking/traction × (1 − v²·crest/g); mu recalibrated to 2.596; grip 0.90 | **76.598** | 0 | – | – | – | – |
+
+Notes on E17 (`mapped/track.py`, `mapped/line.py`, `mapped/build_table.py --crest`):
+
+- **Elevation**: every segment has `grade` and `profil end tangent`. Height = cubic Hermite per segment from z0 to
+  z0 + grade × length with end slopes = previous and own end tangent; closure error 0.77 m spread over the lap; total
+  climb 54.9 m, range −2…46 m. Check against the car's ride height `z` on the E9 lap (`results/e10_trace_e9_beams.csv`):
+  z_car = 0.295 − 0.9e-5·v² − 1.9e-3·v²·z'' explains **R² = 0.917** (spline) vs 0.88–0.90 (linear profile), so the
+  spline profile is the one TORCS uses. Crests (−z'' as 1/m): 2376 m (0.0048, the braking zone before the Corkscrew),
+  2434 m (0.0040, #9), **2471 m (0.0037, #9 → #10)**, 2230 m, 219 m. At 95 km/h on 2471 m the load drops ~25 %;
+  at 160 km/h on 2376 m it drops to almost zero.
+- **Model**: normal load factor = 1 − v²·crest/g (crests only, dips not credited). Corner limit
+  v² ≤ mu·g / (|k| + mu·crest); braking and traction are multiplied by the load factor.
+- **A bug found on the way**: the backward (braking) pass evaluated the friction circle at the not yet lowered speed of
+  the point, i.e. close to the corner limit, which left almost no grip for braking. Every braking point in
+  E11–E16 was therefore too early (the "table brakes earlier than E9" in #2/#6/#8). Fixed: the braking grip is now taken
+  at the known speed of the next point. With the fix, mu calibrated on E9's own line as in E11 is **2.393** without
+  crests (closer to the 2.0–2.4 g measured on E9) and **2.596** with the crest model.
+- **E17a**, braking fix only (mu 2.393, grip 0.90): first damage at **2491 m**, off track from 2478 m (Corkscrew crest),
+  damage 64; at grip 0.95 damage 111 and stuck. The later braking is not survivable over the crests without the crest
+  model. Rejected.
+- **E17b**, braking fix + crest model (mu 2.596, grip 0.90, model lap 74.36 s): gate (`results/e17b_g090_gate.txt`):
+  1 lap **76.598 s**, damage 0, off track 0 s; 3 laps 76.598 / 73.086 / 73.060 clean; ±1 %: **20/20**, lap 1 mean / worst /
+  best 76.704 / 77.190 / 76.532. **2.958 s faster than E9.** At grip 0.95 the Corkscrew is now fine; the lap fails
+  only at the exit of #13 (off track at 3289 m, spin): that is E20's job.
+- **#9–#10 model vs real** (2405–2597 m): real 2.39 / 3.38 s vs model 2.34 / 3.26 s (+0.04 / +0.12 s). Against E16 (grip
+  0.90, no crest model): 5.76 s vs 6.22 s through the stretch, full-lock steps 10 vs 58, TC cuts 91 vs 120 steps,
+  max slip 17.7 vs 18.3 km/h.
+- Max |trackPos| 0.845 at 3298 m and the largest line error (3.25 m at 3286 m) are both at #13's exit (22.8 km/h slip,
+  +0.45 s against the model). #3 is +0.24 s (exit of #2). Against E9 the lap is faster everywhere except #3 (+0.27) and
+  #8 (+0.45).
+
+| # | corner (m) | stretch (m) | min speed real / target (km/h) | real lat g (max) | max slip (km/h) | time real / model (s) | real - model | ref (E9) time / real - ref |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 185-221 L | 125-281 | 191 / 192 | 2.69 | 2.3 | 2.70 / 2.68 | +0.02 | 2.84 / -0.14 |
+| 2 | 407-540 L | 347-564 | 101 / 102 | 3.77 | 14.1 | 5.98 / 5.89 | +0.09 | 6.24 / -0.27 |
+| 3 | 589-638 R | 564-685 | 172 / 177 | 1.40 | 2.5 | 2.51 / 2.26 | +0.24 | 2.24 / +0.27 |
+| 4 | 733-806 R | 685-866 | 126 / 126 | 3.60 | 6.9 | 4.23 / 4.16 | +0.07 | 4.61 / -0.38 |
+| 5 | 995-1074 R | 935-1134 | 154 / 155 | 3.66 | 5.1 | 3.91 / 3.85 | +0.07 | 4.30 / -0.39 |
+| 6 | 1477-1612 L | 1417-1672 | 128 / 129 | 3.14 | 7.0 | 5.47 / 5.43 | +0.04 | 5.60 / -0.12 |
+| 7 | 1918-1949 L | 1858-2009 | 157 / 159 | 4.78 | 6.2 | 3.08 / 2.95 | +0.12 | 3.58 / -0.50 |
+| 8 | 2351-2378 R | 2291-2405 | 137 / 139 | 2.43 | 1.9 | 2.30 / 2.29 | +0.01 | 1.85 / +0.45 |
+| 9 | 2432-2469 L | 2405-2476 | 88 / 88 | 4.28 | 12.2 | 2.39 / 2.34 | +0.04 | 3.04 / -0.65 |
+| 10 | 2484-2597 R | 2476-2597 | 102 / 105 | 3.83 | 17.5 | 3.38 / 3.26 | +0.12 | 4.03 / -0.65 |
+| 11 | 2598-2784 L | 2597-2844 | 140 / 140 | 4.78 | 7.7 | 5.23 / 5.22 | +0.02 | 5.38 / -0.15 |
+| 12 | 2943-3020 R | 2883-3080 | 143 / 143 | 3.37 | 5.5 | 4.16 / 4.06 | +0.10 | 4.38 / -0.22 |
+| 13 | 3250-3286 L | 3190-3346 | 84 / 85 | 3.42 | 22.8 | 4.97 / 4.53 | +0.45 | 5.59 / -0.62 |
