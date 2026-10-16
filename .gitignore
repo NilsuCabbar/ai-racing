@@ -15,3 +15,4 @@ perturb.csv
 perturb_*.txt
 trace_last.csv
 trace_e1*.csv
+mapped/table_e1*.csv

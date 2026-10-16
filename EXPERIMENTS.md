@@ -438,3 +438,47 @@ above the target, which is the grip ladder's job; `brake_gain` stays 0.08 so the
 | 11 | 2598-2784 L | 2597-2844 | 142 / 143 | 2.62 | 4.2 | 5.47 / 5.46 | +0.01 | 5.38 / +0.09 |
 | 12 | 2943-3020 R | 2883-3080 | 142 / 142 | 3.19 | 3.9 | 4.55 / 4.50 | +0.06 | 4.38 / +0.17 |
 | 13 | 3250-3286 L | 3190-3346 | 84 / 84 | 3.16 | 11.3 | 5.57 / 5.27 | +0.29 | 5.59 / -0.02 |
+
+| 2026-10-16 | E16 map: grip ladder | table grip 0.90 → 0.95 (E15 driver); stop at the first failed step | **80.060** (grip 0.90) | 0 | – | – | – | – |
+
+Notes on E16: `build_table.py --grip g` for g = 0.90, 0.95, … with the E15 driver, each step through `mapped/gate.py`
+(1 lap, 3 laps, 20 × ±1 %); the ladder stops at the first failure and keeps the last step that passed.
+
+| Grip | Model lap | 1 lap | 3 laps | ±1 % | Result |
+|---|---|---|---|---|---|
+| 0.85 (E15) | 78.89 | 80.674 | 80.674 / … clean | 20/20 | passed |
+| **0.90** | 77.26 | **80.060** | 80.060 / 76.594 / 76.442 clean | **20/20** (lap 1 mean / worst / best 80.212 / 80.492 / 79.996) | passed: **kept** |
+| 0.95 | 75.75 | timeout: damage 1 at 2496 m, then off track at 3295 m (spun at the exit of #13, stuck) | – | – | failed |
+| 0.95, #10 grip × 0.947 (= 0.90 there) | 75.81 | 95.088: the same damage 1 at 2496 m, 8.5 s off track from 3295 m | – | – | failed |
+
+Why 0.95 fails (`results/e16_trace_g095_l10.csv` against `results/e16_trace_g090.csv`):
+- **#9 → #10, the crest of the Corkscrew (2465–2500 m)**: the car changes from left to right lock while it goes light
+  (z 0.29 → 0.44 m, then lands at 0.25–0.27 m). The steering sits at full lock (±1 = 21°), traction control keeps cutting
+  the throttle (1.0 ↔ 0.34), sideways slip reaches 17–20 km/h, and the car is 6–15 km/h **below** the target. At 0.95
+  it is pushed out to trackPos −0.91 (0.90: −0.71) and takes damage 1 when it lands. Because the car is below the
+  target there, the local grip margin for #10 cannot help, and it did not (same speed, same damage).
+- **#13, last hairpin exit (3295 m)**: the rear steps out under throttle with the steering still loaded and the car spins
+  off the right edge. Also traction, not cornering grip.
+So the limit at 0.95 is traction and the car's behaviour over the crest, not the corner speeds in the table.
+
+Grip 0.90 lap (`results/e16_g090_analysis.txt`): max |trackPos| 0.797, line error median 0.10 m but max 3.32 m at
+508 m (#2 exit, 12 km/h slip). Real is 2.8 s slower than its model (77.25 s): #2 +0.35, #10 +0.36 and #13 +0.38 s
+are the traction-limited exits. Against E9 it is still +0.50 s: faster in the Corkscrew (#9, #10: −0.82 s), #1 (−0.32),
+#7 (−0.33), slower in #2 (+0.64), #8 (+0.47), #6 (+0.41) and #3 (+0.36). #2/#6/#8 are braking zones: the table's
+0.9 × 3 g braking point is earlier than E9's.
+
+| # | corner (m) | stretch (m) | min speed real / target (km/h) | real lat g (max) | max slip (km/h) | time real / model (s) | real - model | ref (E9) time / real - ref |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 185-221 L | 125-281 | 222 / 285 | 2.94 | 2.7 | 2.52 / 2.46 | +0.07 | 2.84 / -0.32 |
+| 2 | 407-540 L | 347-564 | 103 / 104 | 3.66 | 12.1 | 6.88 / 6.53 | +0.35 | 6.24 / +0.64 |
+| 3 | 589-638 R | 564-685 | 161 / 178 | 1.26 | 2.2 | 2.60 / 2.38 | +0.21 | 2.24 / +0.36 |
+| 4 | 733-806 R | 685-866 | 128 / 128 | 3.24 | 8.5 | 4.54 / 4.50 | +0.04 | 4.61 / -0.07 |
+| 5 | 995-1074 R | 935-1134 | 158 / 159 | 3.87 | 5.7 | 4.15 / 4.06 | +0.09 | 4.30 / -0.15 |
+| 6 | 1477-1612 L | 1417-1672 | 131 / 131 | 2.39 | 5.2 | 6.01 / 5.96 | +0.05 | 5.60 / +0.41 |
+| 7 | 1918-1949 L | 1858-2009 | 160 / 164 | 4.73 | 3.8 | 3.25 / 3.09 | +0.16 | 3.58 / -0.33 |
+| 8 | 2351-2378 R | 2291-2405 | 158 / 156 | 2.32 | 2.4 | 2.32 / 2.39 | -0.07 | 1.85 / +0.47 |
+| 9 | 2432-2469 L | 2405-2476 | 90 / 90 | 4.54 | 5.3 | 2.72 / 2.64 | +0.08 | 3.04 / -0.32 |
+| 10 | 2484-2597 R | 2476-2597 | 98 / 107 | 2.80 | 16.9 | 3.54 / 3.17 | +0.36 | 4.03 / -0.50 |
+| 11 | 2598-2784 L | 2597-2844 | 146 / 147 | 2.82 | 5.1 | 5.33 / 5.31 | +0.02 | 5.38 / -0.05 |
+| 12 | 2943-3020 R | 2883-3080 | 146 / 146 | 3.30 | 4.2 | 4.44 / 4.37 | +0.07 | 4.38 / +0.06 |
+| 13 | 3250-3286 L | 3190-3346 | 86 / 87 | 3.14 | 12.8 | 5.52 / 5.14 | +0.38 | 5.59 / -0.07 |
