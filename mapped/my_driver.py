@@ -11,6 +11,9 @@ point-mass speeds). Per control step:
     proportional inside the band, brake (speed - target) * brake_gain above it.
   - safety from the live sensors: a speed cap from the free distance straight ahead (safe_decel, safe_margin,
     safe_floor), and no throttle near the edge while moving outwards (edge_pos).
+  - exit guard (E20): with the steering past `exit_steer`, the throttle is limited to
+    max(exit_min, 1 - exit_k * (|steer| - exit_steer)), so the car does not power out of shape at a hairpin exit;
+    while the steering is at lock the sensor cap may brake at most `lock_brake`.
   - ABS, traction control and rpm gear shifting as in fast/my_driver.py (Tuna's driver).
 Sensors: angle (track heading - car heading), trackPos (+1 left edge), speedX, track[19], rpm, wheelSpinVel.
 """
@@ -37,6 +40,10 @@ DEFAULTS = {
     "safe_margin": 4.0,     # m
     "safe_floor": 60.0,     # km/h, the sensor cap never goes below this
     "edge_pos": 0.97,       # |trackPos| above which throttle is cut while moving outwards (0 = off)
+    "exit_steer": 0.0,      # |steer| above which the throttle is limited (0 = off)
+    "exit_k": 2.0,          # throttle limit slope per unit of steer above exit_steer
+    "exit_min": 0.2,        # the throttle limit never goes below this
+    "lock_brake": 1.0,      # max brake while |steer| >= 0.98 (1 = no limit)
     "max_gear": 6,          # the kit client turns gear 7 into neutral
     "up_rpm": 17095.3119,
     "down_rpm": 10421.859,
@@ -131,9 +138,11 @@ def drive(c, p=None):
 
     # --- target speed from the table, with a sensor safety cap ---
     target = prm["scale"] * _interp("v", s + v * prm["lead_t"]) * 3.6
+    capped = False
     front = max(track[8], track[9], track[10])
     if front > 0:
         cap = math.sqrt((prm["safe_floor"] / 3.6) ** 2 + 2.0 * prm["safe_decel"] * max(0.0, front - prm["safe_margin"]))
+        capped = cap * 3.6 < target
         target = min(target, cap * 3.6)
 
     # edge guard: near the edge and still moving outwards -> no throttle
@@ -150,6 +159,8 @@ def drive(c, p=None):
             slip = (speed - wheel_v) / speed
             if slip > prm["abs_slip"]:
                 brake *= _clip(1.0 - (slip - prm["abs_slip"]) / prm["abs_range"], 0.0, 1.0)
+        if abs(R["steer"]) >= 0.98:
+            brake = min(brake, prm["lock_brake"])
         R["brake"] = brake
         R["accel"] = 0.0
     else:
@@ -157,6 +168,9 @@ def drive(c, p=None):
         R["accel"] = _clip((target - speed) / prm["full_band"], 0.0, 1.0) if prm["full_band"] > 0 else 1.0
         if edge:
             R["accel"] = 0.0
+        if prm["exit_steer"] > 0 and abs(R["steer"]) > prm["exit_steer"]:
+            lim = max(prm["exit_min"], 1.0 - prm["exit_k"] * (abs(R["steer"]) - prm["exit_steer"]))
+            R["accel"] = min(R["accel"], lim)
 
     # --- traction control ---
     w = S["wheelSpinVel"]

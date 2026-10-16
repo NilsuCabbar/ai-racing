@@ -541,3 +541,44 @@ lock only appears when the front slides and the controller asks for more. In E17
 `line.local_limit`), same grip 0.90 and crest model: model lap 74.50 s (+0.14), real 1 lap **76.868 s** (+0.27 s
 against E17b), clean. Through 2405–2597 m: 6.14 s vs 5.76 s, full lock 31 vs 10 steps, max slip 19.1 vs 17.7 km/h.
 A tighter line there makes the crest worse. Rejected; the 0.75 line stays. The narrowing option stays in the code.
+
+| 2026-10-16 | E19 map: traction control threshold | `tc_thresh` 13.8 → 16 (screened 8–25, off, `tc_cut` 0.3–0.9) on E17b | 76.574 | 0 | – | – | – | – |
+
+Notes on E19 (E17b table, grip 0.90; single laps):
+
+| `tc_thresh` (`tc_cut` 0.657) | 8 | 10 | 13.8 (E17b) | 16 | 18 | 20 | 25 | off (1000) |
+|---|---|---|---|---|---|---|---|---|
+| lap (s) | 76.820 | 76.838 | 76.598 | 76.574 | 76.572 | 76.688 | 76.966 | timeout, damage 110 |
+
+`tc_cut` with `tc_thresh` 18: 0.3 → timeout/damage 60, 0.5 → timeout (off track), 0.8 → 76.676, 0.9 (13.8) → 76.888;
+16 / 0.8 → 76.674. The traction control is needed (off = crash) and the current threshold is already within 0.03 s
+of the best. Gate for `tc_thresh` 16 (`results/e19_tc16_gate.txt`): 76.574 s, 3 laps clean, ±1 % **19/20** (lap 1 mean
+76.638). The partial-throttle steps in #9–#10 (157 vs 158) and #13 (82 vs 85) and the stretch times (5.76 / 4.93 s) are the
+same as E17b, so the TC does not cut more at the crest than it should. Rejected: 0.024 s is noise against 20/20 → 19/20.
+
+| 2026-10-16 | E20 map: exit guard at high steering | throttle ≤ max(0.2, 1 − 2·(|steer| − 0.6)); optional brake limit at full lock (`lock_brake`) | 76.872 (grip 0.90) / 76.906 (grip 0.95) | 0 | – | – | – | – |
+
+Notes on E20 (`mapped/my_driver.py`: `exit_steer`, `exit_k`, `exit_min`, `lock_brake`; off by default).
+What happens at #13 (`results/e17b_trace_g090.csv`, `mapped/trace_e17b_g095.csv`): the car enters the left hairpin
+sideways (slip −20…−23 km/h, angle −0.49), the steering reaches full lock at 3266 m and stays there to 3290 m while the
+throttle goes to 1.0 (TC cuts it to 0.34); the car runs ~2 m outside the line (trackPos +0.39 against +0.75). At grip
+0.95 it is a little faster and, pointing at the right edge, the sensor speed cap brakes (0.2–0.69 at 3282–3287 m) **at full
+lock**; the car spins and leaves the track at 3289 m. Single laps (E17b tables):
+
+| Setting | grip 0.90 | grip 0.95 |
+|---|---|---|
+| none (E17b) | 76.598 | timeout, off track |
+| `exit_steer` 0.6, `exit_k` 2 | 76.872 | **76.906, clean** |
+| `exit_steer` 0.8 | 76.592 | timeout, damage 50 |
+| `exit_steer` 0.7 | 76.714 | 78.030, 0.1 s off |
+| `exit_steer` 0.6, `exit_k` 4 | 77.312 | 77.410 clean |
+| `exit_steer` 0.6, `exit_k` 1 | 76.734 | 81.542, 2.3 s off |
+| `exit_steer` 0.6, `exit_min` 0.5 | 76.784 | 77.546 clean |
+| `exit_steer` 0.7, `exit_k` 1 | 76.516 | timeout, damage 23 |
+| `exit_steer` 0.5, `exit_k` 1 | 76.768 | 77.576 clean |
+| `lock_brake` 0.1 | 76.598 | 90.514, 9.9 s off |
+| `exit_steer` 0.6 + `lock_brake` 0.1 | 76.872 | 76.906 clean |
+
+The brake limit alone does not stop the spin; limiting the throttle on the exit does. `exit_steer` 0.6 / `exit_k` 2 is
+the only setting that keeps grip 0.95 clean with margin; it costs 0.27 s at grip 0.90. On its own it is not an
+improvement (rejected at 0.90); it is kept for the ladder in E21, whose result decides whether it stays.
