@@ -398,3 +398,43 @@ So the shorter look-ahead brings ~0.4 s and the feedforward another ~0.15 s.
 | 11 | 2598-2784 L | 2597-2844 | 140 / 143 | 2.63 | 4.0 | 5.55 / 5.46 | +0.09 | 5.38 / +0.17 |
 | 12 | 2943-3020 R | 2883-3080 | 140 / 142 | 3.07 | 3.6 | 4.66 / 4.50 | +0.16 | 4.38 / +0.28 |
 | 13 | 3250-3286 L | 3190-3346 | 82 / 84 | 3.12 | 11.5 | 5.60 / 5.27 | +0.33 | 5.59 / +0.01 |
+
+| 2026-10-16 | E15 map: speed following | `full_band` 8 → 1 km/h, `lead_t` 0.15 → 0 s (parameters only) | **80.674** | 0 | – | – | – | – |
+
+Notes on E15: same table (0.75 line, grip 0.85) and E14 steering; only how the target speed is followed.
+Single-lap screening (all from E14's 82.024 s):
+
+| Change | Lap (s) | | Change | Lap (s) |
+|---|---|---|---|---|
+| `full_band` 3 | 81.546 | | `full_band` 1, `lead_t` 0.05 | 81.082 |
+| `full_band` 1 | 81.322 | | `full_band` 1, `lead_t` 0 | **80.674** |
+| `full_band` 0.5 | 81.116 | | `full_band` 1, `brake_gain` 0.04 | 80.944 |
+| `lead_t` 0.3 / 0.5 | 82.584 / 83.678 | | `full_band` 1, `brake_gain` 0.2 | 81.892 |
+| `full_band` 2, `lead_t` 0.3 (± `brake_gain` 0.15) | 82.160 | | `full_band` 1, `lead_t` 0.05, `brake_gain` 0.2 | 83.532, damage 12 |
+
+Reading the target earlier only makes the car brake earlier (the table already contains the braking), and a narrow
+band opens the throttle at once. A lower `brake_gain` is also faster, but only because the car then enters corners
+above the target, which is the grip ladder's job; `brake_gain` stays 0.08 so the target is followed honestly.
+
+- Gate (`results/e15_speed_gate.txt`): 1 lap **80.674 s**, damage 0, off track 0 s; 3 laps clean; ±1 %: **20/20**.
+- Speed − target: median **−1.0 km/h** (E14 −5.4), 95th +5.8. Full throttle 29.8 s. Line error median 0.09 m, max 1.78 m;
+  max |trackPos| 0.787.
+- Real vs model per corner now +0.01…+0.13 s except #13 (+0.29); the model lap for this table is 78.89 s.
+  Against E9: faster in #1, #5, #7, #9, #10, #13; still slower in #2, #6 and #8 (+0.54…+0.61 s), where the
+  table's 0.85 × 3 g braking is earlier than E9's.
+
+| # | corner (m) | stretch (m) | min speed real / target (km/h) | real lat g (max) | max slip (km/h) | time real / model (s) | real - model | ref (E9) time / real - ref |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 185-221 L | 125-281 | 222 / 285 | 2.94 | 2.7 | 2.52 / 2.46 | +0.06 | 2.84 / -0.32 |
+| 2 | 407-540 L | 347-564 | 100 / 101 | 3.63 | 13.8 | 6.85 / 6.72 | +0.13 | 6.24 / +0.61 |
+| 3 | 589-638 R | 564-685 | 172 / 176 | 1.40 | 2.5 | 2.52 / 2.44 | +0.07 | 2.24 / +0.28 |
+| 4 | 733-806 R | 685-866 | 124 / 125 | 3.02 | 7.8 | 4.65 / 4.62 | +0.03 | 4.61 / +0.04 |
+| 5 | 995-1074 R | 935-1134 | 154 / 154 | 3.54 | 5.0 | 4.24 / 4.18 | +0.06 | 4.30 / -0.06 |
+| 6 | 1477-1612 L | 1417-1672 | 127 / 128 | 2.26 | 4.3 | 6.13 / 6.11 | +0.02 | 5.60 / +0.54 |
+| 7 | 1918-1949 L | 1858-2009 | 158 / 159 | 4.47 | 3.3 | 3.31 / 3.18 | +0.13 | 3.58 / -0.27 |
+| 8 | 2351-2378 R | 2291-2405 | 153 / 152 | 2.05 | 2.2 | 2.44 / 2.50 | -0.07 | 1.85 / +0.59 |
+| 9 | 2432-2469 L | 2405-2476 | 87 / 87 | 4.60 | 2.8 | 2.76 / 2.71 | +0.05 | 3.04 / -0.28 |
+| 10 | 2484-2597 R | 2476-2597 | 100 / 104 | 3.70 | 12.0 | 3.35 / 3.24 | +0.11 | 4.03 / -0.69 |
+| 11 | 2598-2784 L | 2597-2844 | 142 / 143 | 2.62 | 4.2 | 5.47 / 5.46 | +0.01 | 5.38 / +0.09 |
+| 12 | 2943-3020 R | 2883-3080 | 142 / 142 | 3.19 | 3.9 | 4.55 / 4.50 | +0.06 | 4.38 / +0.17 |
+| 13 | 3250-3286 L | 3190-3346 | 84 / 84 | 3.16 | 11.3 | 5.57 / 5.27 | +0.29 | 5.59 / -0.02 |
